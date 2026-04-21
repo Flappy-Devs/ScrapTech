@@ -11,9 +11,6 @@ import { useAuthStore } from "@/src/store/useAuthStore";
 import { useUIStore } from "@/src/store/useUIStore";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 
-// Danh sách các route thuộc luồng xác thực mới (FE mẫu)
-const AUTH_ROUTES = ["SplashScreen", "LoginScreen", "VerifyOtpScreen", "Onboarding1Screen", "Onboarding2Screen", "Onboarding3Screen"];
-
 export default function RootLayout() {
 	useAuth();
 	const { session, isLoading } = useAuthStore();
@@ -28,17 +25,13 @@ export default function RootLayout() {
 	useEffect(() => {
 		if (isLoading) return;
 
-		const currentRoute = segments[0] as string;
-		const inAuthRoute = AUTH_ROUTES.includes(currentRoute) || currentRoute === "(auth)";
-		const inAppRoute = currentRoute === "(app)" || currentRoute === "MyOrdersScreen";
+		const inAuthGroup = segments[0] === "(auth)";
 		const hasSession = !!session;
 
-		if (!hasSession && !inAuthRoute) {
-			// Chưa đăng nhập → vào SplashScreen (màn hình mới từ FE mẫu)
-			router.replace("/SplashScreen");
-		} else if (hasSession && inAuthRoute) {
-			// Đã đăng nhập → vào màn hình chính
-			router.replace("/MyOrdersScreen");
+		if (!hasSession && !inAuthGroup) {
+			router.replace("/(auth)/login");
+		} else if (hasSession && inAuthGroup) {
+			router.replace("/(app)");
 		}
 	}, [session, isLoading, segments, router]);
 
