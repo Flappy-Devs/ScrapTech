@@ -1,0 +1,62 @@
+# .github/workflows/ci.yml
+# Pipeline CI: Chạy Jest → sinh coverage → đẩy lên SonarCloud
+#
+# Trigger: mỗi lần push lên main/develop hoặc mở Pull Request vào main
+
+name: CI — Test & SonarCloud Analysis
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-analyze:
+    name: Jest Tests + SonarCloud
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout code ────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # SonarCloud cần toàn bộ git history để tính blame/new code
+          fetch-depth: 0
+
+      # ── 2. Setup Node.js ────────────────────────────────────────────────────
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Cài dependencies ─────────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Chạy Jest + sinh coverage report (lcov) ──────────────────────────
+      - name: Run Jest with coverage
+        run: npx jest --coverage --coverageReporters=lcov --coverageReporters=text-summary --passWithNoTests
+        env:
+          # Biến môi trường giả để test không cần .env thật
+          EXPO_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          EXPO_PUBLIC_SUPABASE_KEY: placeholder_key
+
+      # ── 5. Upload coverage artifact (tùy chọn, để xem trên GitHub) ──────────
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/lcov.info
+          retention-days: 7
+
+      # ── 6. Phân tích SonarCloud ─────────────────────────────────────────────
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          # GITHUB_TOKEN: tự động có sẵn trong GitHub Actions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SONAR_TOKEN: tạo tại sonarcloud.io → My Account → Security
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
