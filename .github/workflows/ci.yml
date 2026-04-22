@@ -54,7 +54,7 @@ jobs:
 
       # ── 6. Phân tích SonarCloud ─────────────────────────────────────────────
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@v2.0.0
         env:
           # GITHUB_TOKEN: tự động có sẵn trong GitHub Actions
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
