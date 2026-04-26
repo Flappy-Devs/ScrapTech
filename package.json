@@ -60,12 +60,12 @@
     "jest-expo": "^55.0.16",
     "react-test-renderer": "^19.1.0",
     "typescript": "~5.9.2"
-  }
+  },
   "jest": {
   "preset": "jest-expo",
   "collectCoverage": true,
   "coverageReporters": ["html", "lcov", "text"],
   "coverageDirectory": "coverage"
-},
+}
 
 }
