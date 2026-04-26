@@ -1,5 +1,4 @@
 # Welcome to your Expo app 👋
-# Welcome to your Expo app 👋
 
 <p align="left">
   <a href="https://github.com/Flappy-Devs/ScrapTech/actions/workflows/ci.yml">
