@@ -1,3 +1,8 @@
+# .github/workflows/ci.yml
+# Pipeline CI: Chạy Jest → sinh coverage → đẩy lên SonarCloud
+#
+# Trigger: mỗi lần push lên main/develop hoặc mở Pull Request vào main
+
 name: CI — Test & SonarCloud Analysis
 
 on:
@@ -12,60 +17,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout code
+      # ── 1. Checkout code ────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          # SonarCloud cần toàn bộ git history để tính blame/new code
           fetch-depth: 0
 
-      # 2. Setup Node.js
+      # ── 2. Setup Node.js ────────────────────────────────────────────────────
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      # 3. Install dependencies
+      # ── 3. Cài dependencies ─────────────────────────────────────────────────
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      # 4. Run Jest + coverage (FIXED)
+      # ── 4. Chạy Jest + sinh coverage report (lcov) ──────────────────────────
       - name: Run Jest with coverage
-        run: |
-          npx jest \
-          --coverage \
-          --coverageReporters=html \
-          --coverageReporters=lcov \
-          --coverageReporters=text-summary \
-          --watchAll=false \
-          --passWithNoTests
+        run: npx jest --coverage --coverageReporters=lcov --coverageReporters=text-summary --passWithNoTests
         env:
+          # Biến môi trường giả để test không cần .env thật
           EXPO_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           EXPO_PUBLIC_SUPABASE_KEY: placeholder_key
 
-      # 5. Upload HTML report (FIXED)
-      - name: Upload coverage HTML report
+      # ── 5. Upload test-report artifact (HTML report for GitHub UI) ──────────
+      - name: Upload test report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-report
-          path: coverage/lcov-report
+          path: coverage/lcov-report/
           retention-days: 7
 
-      # 6. Upload raw lcov (optional, giữ lại cho debug)
-      - name: Upload lcov file
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: lcov-file
-          path: coverage/lcov.info
-          retention-days: 7
-
-      # 7. Install Sonar Scanner
+      # ── 6. Phân tích SonarCloud (dùng npm thay Docker để tránh Node.js 18 trong Alpine) ──
       - name: Install SonarQube Scanner
         run: npm install -g sonarqube-scanner
 
-      # 8. SonarCloud Scan
       - name: SonarCloud Scan
         run: sonar-scanner
         env:
