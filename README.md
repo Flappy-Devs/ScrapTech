@@ -1,5 +1,23 @@
 # Welcome to your Expo app 👋
 
+<p align="left">
+  <a href="https://github.com/Flappy-Devs/ScrapTech/actions/workflows/ci.yml">
+    <img src="https://github.com/Flappy-Devs/ScrapTech/actions/workflows/ci.yml/badge.svg" alt="CI Status">
+  </a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Flappy-Devs_ScrapTech">
+    <img src="https://sonarcloud.io/api/project_badges/measure?project=Flappy-Devs_ScrapTech&metric=alert_status" alt="Quality Gate Status">
+  </a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Flappy-Devs_ScrapTech">
+    <img src="https://sonarcloud.io/api/project_badges/measure?project=Flappy-Devs_ScrapTech&metric=coverage" alt="Coverage">
+  </a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Flappy-Devs_ScrapTech">
+    <img src="https://sonarcloud.io/api/project_badges/measure?project=Flappy-Devs_ScrapTech&metric=bugs" alt="Bugs">
+  </a>
+  <a href="https://sonarcloud.io/summary/new_code?id=Flappy-Devs_ScrapTech">
+    <img src="https://sonarcloud.io/api/project_badges/measure?project=Flappy-Devs_ScrapTech&metric=vulnerabilities" alt="Vulnerabilities">
+  </a>
+</p>
+
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
 ## Get started
@@ -34,6 +52,29 @@ npm run reset-project
 ```
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+
+## Testing
+
+This project uses **Jest** and **React Native Testing Library** for testing.
+
+### Run tests locally
+
+- **Run all tests:**
+  ```bash
+  npm test
+  ```
+
+- **Run tests with coverage report:**
+  ```bash
+  npm run test:coverage
+  ```
+  After running this command, you can view the detailed HTML report at:
+  `coverage/lcov-report/index.html`
+
+- **Watch mode:**
+  ```bash
+  npx jest --watch
+  ```
 
 ## Learn more
 
