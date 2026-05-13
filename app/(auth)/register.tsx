@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useAuth } from "@/src/features/auth";
-import { useThemeColors } from "@/src/utils/useThemeColors";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 export default function RegisterScreen() {
 	const { t } = useTranslation();
@@ -33,25 +33,25 @@ export default function RegisterScreen() {
 	};
 
 	return (
-		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={[styles.container, { backgroundColor: c.bg }]}>
+		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={[styles.container, { backgroundColor: c.neutral.light.lightest }]}>
 			<View style={styles.inner}>
-				<Text style={[styles.appName, { color: c.primary }]}>{t("common.appName")}</Text>
-				<Text style={[styles.title, { color: c.text }]}>{t("auth.register")}</Text>
+				<Text style={[styles.appName, { color: c.highlight.medium }]}>{t("common.appName")}</Text>
+				<Text style={[styles.title, { color: c.neutral.dark.darkest }]}>{t("auth.register")}</Text>
 
-				<TextInput style={[styles.input, { color: c.text, borderColor: c.inputBorder, backgroundColor: c.inputBg }]} placeholder={t("auth.email")} placeholderTextColor={c.placeholder} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={t("auth.email")} placeholderTextColor={c.neutral.dark.light} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
 
-				<TextInput style={[styles.input, { color: c.text, borderColor: c.inputBorder, backgroundColor: c.inputBg }]} placeholder={t("auth.password")} placeholderTextColor={c.placeholder} value={password} onChangeText={setPassword} secureTextEntry />
+				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={t("auth.password")} placeholderTextColor={c.neutral.dark.light} value={password} onChangeText={setPassword} secureTextEntry />
 
-				<TextInput style={[styles.input, { color: c.text, borderColor: c.inputBorder, backgroundColor: c.inputBg }]} placeholder={t("auth.confirmPassword")} placeholderTextColor={c.placeholder} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={t("auth.confirmPassword")} placeholderTextColor={c.neutral.dark.light} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
 
-				<Pressable style={[styles.button, { backgroundColor: c.primary }, loading && styles.buttonDisabled]} onPress={handleSignUp} disabled={loading}>
+				<Pressable style={[styles.button, { backgroundColor: c.highlight.medium }, loading && styles.buttonDisabled]} onPress={handleSignUp} disabled={loading}>
 					{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t("auth.register")}</Text>}
 				</Pressable>
 
 				<Link href="/(auth)/login" asChild>
 					<Pressable style={styles.linkRow}>
-						<Text style={{ color: c.textSecondary }}>{t("auth.hasAccount")}</Text>
-						<Text style={{ color: c.primary, fontWeight: "600", marginLeft: 4 }}>{t("auth.login")}</Text>
+						<Text style={{ color: c.neutral.dark.darkest }}>{t("auth.hasAccount")}</Text>
+						<Text style={{ color: c.highlight.medium, fontWeight: "600", marginLeft: 4 }}>{t("auth.login")}</Text>
 					</Pressable>
 				</Link>
 			</View>

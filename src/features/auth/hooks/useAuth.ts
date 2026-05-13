@@ -1,20 +1,9 @@
-import * as Linking from "expo-linking";
 import { useCallback, useEffect } from "react";
 import { AppState } from "react-native";
 
 import { supabase } from "@/src/api";
 import { useAuthStore } from "@/src/store/useAuthStore";
 
-const redirectUrl = Linking.createURL('/');
-
-/**
- * Auth service hook.
- *
- * Provides signUp / signIn / signOut and sets up:
- * - `onAuthStateChange` listener → updates Zustand auth store
- * - `AppState` listener → refreshes tokens when app comes to foreground
- * - Initializes sync engine on sign-in, tears down on sign-out
- */
 export function useAuth() {
     const { setSession, clearSession } = useAuthStore();
 
@@ -53,7 +42,6 @@ export function useAuth() {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
-                options: { emailRedirectTo: redirectUrl },
             });
             if (error) throw error;
             return data;
@@ -82,7 +70,6 @@ export function useAuth() {
     const sendMagicLink = useCallback(async (email: string) => {
         const { data, error } = await supabase.auth.signInWithOtp({
             email,
-            options: { emailRedirectTo: redirectUrl },
         });
         if (error) throw error;
         return data;

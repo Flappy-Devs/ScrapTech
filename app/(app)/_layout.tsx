@@ -1,23 +1,64 @@
 import { Tabs } from "expo-router";
-import { useTranslation } from "react-i18next";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 export default function AppLayout() {
-	const { t } = useTranslation();
+	const color = useThemeColors();
 
 	return (
-		<Tabs>
+		<Tabs
+			screenOptions={{
+				tabBarActiveTintColor: color.highlight.medium,
+				tabBarInactiveTintColor: color.neutral.dark.lightest,
+			}}
+		>
 			<Tabs.Screen
 				name="index"
 				options={{
-					title: t("home.title"),
-					tabBarLabel: t("home.title"),
+					headerShown: false,
+					tabBarLabel: "Trang chủ",
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "home" : "home-outline"}
+							size={size}
+							color={color}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="order-history"
+				options={{
+					headerTitle: "Lịch sử đơn hàng",
+					tabBarLabel: "Lịch sử đơn hàng",
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "receipt" : "receipt-outline"}
+							size={size}
+							color={color}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="user-info"
+				options={{
+					headerShown: false,
+					tabBarLabel: "Thông tin người dùng",
+					tabBarIcon: ({ color, size, focused }) => (
+						<Ionicons
+							name={focused ? "person-circle" : "person-circle-outline"}
+							size={size}
+							color={color}
+						/>
+					),
 				}}
 			/>
 			<Tabs.Screen
 				name="settings"
 				options={{
-					title: t("settings.title"),
-					tabBarLabel: t("settings.title"),
+					headerTitle: "Cài đặt",
+					href: null,
 				}}
 			/>
 		</Tabs>
