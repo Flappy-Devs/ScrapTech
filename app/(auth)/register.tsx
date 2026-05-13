@@ -1,24 +1,25 @@
 import { Link } from "expo-router";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { useAuth } from "@/src/features/auth";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
+import { useAuth } from "@/src/hooks/useAuth";
 
 export default function RegisterScreen() {
-	const { t } = useTranslation();
 	const c = useThemeColors();
+
 	const { signUp } = useAuth();
+
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+
 	const [loading, setLoading] = useState(false);
 
 	const handleSignUp = async () => {
 		if (!email || !password) return;
 		if (password !== confirmPassword) {
-			Alert.alert(t("common.error"), "Passwords do not match");
+			Alert.alert("Passwords do not match");
 			return;
 		}
 		setLoading(true);
@@ -26,7 +27,7 @@ export default function RegisterScreen() {
 			await signUp(email, password);
 			Alert.alert("Success", "Check your email for verification!");
 		} catch (error: any) {
-			Alert.alert(t("common.error"), error.message);
+			Alert.alert(error.message);
 		} finally {
 			setLoading(false);
 		}
@@ -35,23 +36,23 @@ export default function RegisterScreen() {
 	return (
 		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={[styles.container, { backgroundColor: c.neutral.light.lightest }]}>
 			<View style={styles.inner}>
-				<Text style={[styles.appName, { color: c.highlight.medium }]}>{t("common.appName")}</Text>
-				<Text style={[styles.title, { color: c.neutral.dark.darkest }]}>{t("auth.register")}</Text>
+				<Text style={[styles.appName, { color: c.highlight.medium }]}>{"ScrapTech"}</Text>
+				<Text style={[styles.title, { color: c.neutral.dark.darkest }]}>{"Đăng ký"}</Text>
 
-				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={t("auth.email")} placeholderTextColor={c.neutral.dark.light} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={"Email"} placeholderTextColor={c.neutral.dark.light} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
 
-				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={t("auth.password")} placeholderTextColor={c.neutral.dark.light} value={password} onChangeText={setPassword} secureTextEntry />
+				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={"Mật khẩu"} placeholderTextColor={c.neutral.dark.light} value={password} onChangeText={setPassword} secureTextEntry />
 
-				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={t("auth.confirmPassword")} placeholderTextColor={c.neutral.dark.light} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={"Nhập lại mật khẩu"} placeholderTextColor={c.neutral.dark.light} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
 
 				<Pressable style={[styles.button, { backgroundColor: c.highlight.medium }, loading && styles.buttonDisabled]} onPress={handleSignUp} disabled={loading}>
-					{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t("auth.register")}</Text>}
+					{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{"Đăng ký"}</Text>}
 				</Pressable>
 
 				<Link href="/(auth)/login" asChild>
 					<Pressable style={styles.linkRow}>
-						<Text style={{ color: c.neutral.dark.darkest }}>{t("auth.hasAccount")}</Text>
-						<Text style={{ color: c.highlight.medium, fontWeight: "600", marginLeft: 4 }}>{t("auth.login")}</Text>
+						<Text style={{ color: c.neutral.dark.darkest }}>{"Đã có tài khoản?"}</Text>
+						<Text style={{ color: c.highlight.medium, fontWeight: "600", marginLeft: 4 }}>{"Đăng nhập"}</Text>
 					</Pressable>
 				</Link>
 			</View>

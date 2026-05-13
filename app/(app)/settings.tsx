@@ -1,40 +1,21 @@
-import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { useAuth } from "@/src/features/auth";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
+import { useAuth } from "@/src/hooks/useAuth";
 
 
 export default function SettingsScreen() {
-	const { t, i18n } = useTranslation();
-	const c = useThemeColors();
-	const { signOut } = useAuth();
 
-	const handleLanguageChange = (lang: string) => {
-		i18n.changeLanguage(lang);
-	};
+	const { signOut } = useAuth();
+	const c = useThemeColors();
 
 	return (
 		<ScrollView style={[styles.container, { backgroundColor: c.neutral.light.lightest }]} contentContainerStyle={styles.content}>
-			{/* ── Language ───────────────────────────────────────────── */}
-			<Text style={[styles.sectionTitle, { color: c.neutral.dark.darkest }]}>{t("settings.language").toUpperCase()}</Text>
-			<View style={[styles.card, { backgroundColor: c.neutral.light.light, borderColor: c.neutral.light.medium }]}>
-				{[
-					{ key: "en", label: t("settings.english") },
-					{ key: "vi", label: t("settings.vietnamese") },
-				].map((lang, idx) => (
-					<Pressable key={lang.key} style={[styles.cardRow, idx > 0 && { borderTopWidth: 1, borderTopColor: c.neutral.light.medium }]} onPress={() => handleLanguageChange(lang.key)}>
-						<Text style={[styles.rowLabel, { color: c.neutral.dark.darkest }]}>{lang.label}</Text>
-						{i18n.language === lang.key && <Text style={{ color: c.highlight.medium, fontSize: 16 }}>✓</Text>}
-					</Pressable>
-				))}
-			</View>
-
 			{/* ── Account ────────────────────────────────────────────── */}
-			<Text style={[styles.sectionTitle, { color: c.neutral.dark.darkest }]}>{t("settings.account").toUpperCase()}</Text>
+			<Text style={[styles.sectionTitle, { color: c.neutral.dark.darkest }]}>{"Tài khoản"}</Text>
 			<View style={[styles.card, { backgroundColor: c.neutral.light.light, borderColor: c.neutral.light.medium }]}>
 				<Pressable style={styles.cardRow} onPress={signOut}>
-					<Text style={[styles.rowLabel, { color: c.error.dark }]}>{t("auth.signOut")}</Text>
+					<Text style={[styles.rowLabel, { color: c.error.dark }]}>{"Đăng xuất"}</Text>
 				</Pressable>
 			</View>
 		</ScrollView>

@@ -5,8 +5,8 @@ import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Fragment } from "react";
 
-import { useAuth } from "@/src/features/auth";
 import { useAuthStore } from "@/src/store/useAuthStore";
+import { useAuth } from "@/src/hooks/useAuth";
 
 export default function RootLayout() {
 	useAuth();

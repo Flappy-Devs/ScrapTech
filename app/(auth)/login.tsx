@@ -1,13 +1,11 @@
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-import { useAuth } from "@/src/features/auth";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
+import { useAuth } from "@/src/hooks/useAuth";
 
 export default function LoginScreen() {
-	const { t } = useTranslation();
 	const c = useThemeColors();
 	const { signIn } = useAuth();
 	const [email, setEmail] = useState("");
@@ -22,7 +20,7 @@ export default function LoginScreen() {
 		try {
 			await signIn(email, password);
 		} catch (error: any) {
-			Alert.alert(t("common.error"), error.message);
+			Alert.alert(error.message);
 		} finally {
 			setLoading(false);
 			router.replace("/(app)");
@@ -32,21 +30,21 @@ export default function LoginScreen() {
 	return (
 		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={[styles.container, { backgroundColor: c.neutral.light.lightest }]}>
 			<View style={styles.inner}>
-				<Text style={[styles.appName, { color: c.highlight.medium }]}>{t("common.appName")}</Text>
-				<Text style={[styles.title, { color: c.neutral.dark.darkest }]}>{t("auth.login")}</Text>
+				<Text style={[styles.appName, { color: c.highlight.medium }]}>{"ScrapTech"}</Text>
+				<Text style={[styles.title, { color: c.neutral.dark.darkest }]}>{"Đăng nhập"}</Text>
 
-				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={t("auth.email")} placeholderTextColor={c.neutral.dark.light} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={"Email"} placeholderTextColor={c.neutral.dark.light} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
 
-				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={t("auth.password")} placeholderTextColor={c.neutral.dark.light} value={password} onChangeText={setPassword} secureTextEntry />
+				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={"Mật khẩu"} placeholderTextColor={c.neutral.dark.light} value={password} onChangeText={setPassword} secureTextEntry />
 
 				<Pressable style={[styles.button, { backgroundColor: c.highlight.medium }, loading && styles.buttonDisabled]} onPress={handleSignIn} disabled={loading}>
-					{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t("auth.login")}</Text>}
+					{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{"Đăng nhập"}</Text>}
 				</Pressable>
 
 				<Link href="/(auth)/register" asChild>
 					<Pressable style={styles.linkRow}>
-						<Text style={{ color: c.neutral.dark.darkest }}>{t("auth.noAccount")}</Text>
-						<Text style={{ color: c.highlight.medium, fontWeight: "600", marginLeft: 4 }}>{t("auth.register")}</Text>
+						<Text style={{ color: c.neutral.dark.darkest }}>{"Chưa có tài khoản?"}</Text>
+						<Text style={{ color: c.highlight.medium, fontWeight: "600", marginLeft: 4 }}>{"Đăng ký"}</Text>
 					</Pressable>
 				</Link>
 			</View>
