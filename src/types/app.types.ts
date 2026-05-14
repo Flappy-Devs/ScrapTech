@@ -33,16 +33,24 @@ export interface AddressSnapshot {
 	longitude?: number | null;
 }
 
+export interface PriceSnapshot {
+	category_name: string;
+	price_min: number;
+	price_max: number | null;
+	currency: string;
+	unit: "kg" | "item";
+}
+
 export interface CreatePickupOrderItemInput {
 	scrap_category_id: string;
 	estimated_quantity?: number | null;
 	unit: "kg" | "item";
+	price_snapshot: PriceSnapshot;
+	estimated_subtotal: number;
 }
 
 export interface CreatePickupOrderInput {
 	scheduled_date: string;
-	scheduled_time_from: string;
-	scheduled_time_to: string;
 	address_id?: string | null;
 	address_snapshot: AddressSnapshot;
 	note?: string | null;

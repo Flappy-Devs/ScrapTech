@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import { useAuthBootstrap } from "@/src/hooks/useAuth";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { useOnboardingStore } from "@/src/store/useOnboardingStore";
+import { AppQueryProvider } from "@/src/providers/query-provider";
 
 export default function RootLayout() {
 	useAuthBootstrap();
@@ -32,7 +33,7 @@ export default function RootLayout() {
 	}
 
 	return (
-		<>
+		<AppQueryProvider>
 			<Stack screenOptions={{ headerShown: false }}>
 				<Stack.Protected guard={!hasCompletedOnboarding}>
 					<Stack.Screen name="onboarding" />
@@ -52,6 +53,6 @@ export default function RootLayout() {
 			</Stack>
 
 			<StatusBar style="auto" />
-		</>
+		</AppQueryProvider>
 	);
 }

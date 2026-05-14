@@ -11,11 +11,9 @@ export async function createPickupOrder(
 ): Promise<string> {
 	const { data, error } = await supabase.rpc("create_pickup_order", {
 		p_scheduled_date: input.scheduled_date,
-		p_scheduled_time_from: input.scheduled_time_from,
-		p_scheduled_time_to: input.scheduled_time_to,
-		p_address_id: input.address_id as string,
+		p_address_id: input.address_id ?? null,
 		p_address_snapshot: input.address_snapshot as any,
-		p_note: input.note as string,
+		p_note: input.note ?? null,
 		p_items: input.items as any,
 		p_image_paths: input.image_paths ?? [],
 	});
@@ -78,5 +76,5 @@ export async function cancelPickupOrder(
 
 	throwIfSupabaseError(error);
 
-	return data as any;
+	return data as PickupOrder;
 }

@@ -1,3 +1,4 @@
+import * as Crypto from "expo-crypto";
 import { decode } from "base64-arraybuffer";
 import { File } from "expo-file-system";
 import { supabase } from "@/src/lib/supabase";
@@ -39,7 +40,7 @@ export async function uploadPickupOrderImage(params: {
 
 	const arrayBuffer = decode(base64);
 
-	const fileName = `${crypto.randomUUID()}.${extension}`;
+	const fileName = `${Crypto.randomUUID()}.${extension}`;
 	const storagePath = `${params.userId}/${fileName}`;
 
 	const { error } = await supabase.storage

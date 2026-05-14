@@ -40,7 +40,15 @@
         }
       ],
       "expo-localization",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cho phép Scrap Tech truy cập thư viện ảnh để bạn tải ảnh phế liệu lên.",
+          "cameraPermission": "Cho phép Scrap Tech truy cập camera để bạn chụp ảnh phế liệu.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

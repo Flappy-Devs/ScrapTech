@@ -120,8 +120,8 @@ create table public.pickup_orders (
   status order_status not null default 'pending',
 
   scheduled_date date not null,
-  scheduled_time_from time not null,
-  scheduled_time_to time not null,
+  scheduled_time_from time,
+  scheduled_time_to time,
 
   address_id uuid references public.addresses(id),
   address_snapshot jsonb not null,
@@ -143,7 +143,15 @@ create table public.pickup_orders (
   updated_at timestamptz not null default now(),
 
   constraint valid_pickup_time check (
-    scheduled_time_to > scheduled_time_from
+    (
+      scheduled_time_from is null
+      and scheduled_time_to is null
+    )
+    or (
+      scheduled_time_from is not null
+      and scheduled_time_to is not null
+      and scheduled_time_to > scheduled_time_from
+    )
   )
 );
 

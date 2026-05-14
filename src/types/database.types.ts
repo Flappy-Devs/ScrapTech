@@ -267,8 +267,8 @@ export type Database = {
           rejected_at: string | null
           rejection_reason: string | null
           scheduled_date: string
-          scheduled_time_from: string
-          scheduled_time_to: string
+          scheduled_time_from: string | null
+          scheduled_time_to: string | null
           seller_id: string
           status: Database["public"]["Enums"]["order_status"]
           updated_at: string
@@ -290,8 +290,8 @@ export type Database = {
           rejected_at?: string | null
           rejection_reason?: string | null
           scheduled_date: string
-          scheduled_time_from: string
-          scheduled_time_to: string
+          scheduled_time_from?: string | null
+          scheduled_time_to?: string | null
           seller_id: string
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
@@ -313,8 +313,8 @@ export type Database = {
           rejected_at?: string | null
           rejection_reason?: string | null
           scheduled_date?: string
-          scheduled_time_from?: string
-          scheduled_time_to?: string
+          scheduled_time_from?: string | null
+          scheduled_time_to?: string | null
           seller_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
@@ -757,19 +757,31 @@ export type Database = {
             }
             Returns: string
           }
-      create_pickup_order: {
-        Args: {
-          p_address_id: string
-          p_address_snapshot: Json
-          p_image_paths: string[]
-          p_items: Json
-          p_note: string
-          p_scheduled_date: string
-          p_scheduled_time_from: string
-          p_scheduled_time_to: string
-        }
-        Returns: string
-      }
+      create_pickup_order:
+        | {
+            Args: {
+              p_address_id: string
+              p_address_snapshot: Json
+              p_image_paths: string[]
+              p_items: Json
+              p_note: string
+              p_scheduled_date: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_address_id: string
+              p_address_snapshot: Json
+              p_image_paths: string[]
+              p_items: Json
+              p_note: string
+              p_scheduled_date: string
+              p_scheduled_time_from: string
+              p_scheduled_time_to: string
+            }
+            Returns: string
+          }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
