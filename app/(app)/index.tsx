@@ -123,6 +123,7 @@ export default function MyOrdersScreen() {
 }
 
 function OrderCard({ order }: { order: PickupOrder }) {
+	
 	const addressSnapshot = order.address_snapshot as unknown as AddressSnapshot;
 	const address =
 		addressSnapshot?.address_line?.trim() || "Chưa có địa chỉ thu gom";

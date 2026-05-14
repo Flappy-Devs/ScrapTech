@@ -16,6 +16,7 @@ import {
 	formatVndAmount,
 } from "@/src/features/orders/orders.pricing";
 import type { AddressSnapshot } from "@/src/types/app.types";
+import { getPickupOrderImagePublicUrl } from "@/src/features/storage/storage.api";
 
 export default function OrderDetailScreen() {
 	const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,6 +42,10 @@ export default function OrderDetailScreen() {
 	const addressSnapshot =
 		order.address_snapshot as unknown as AddressSnapshot;
 
+	const imageUrl = order.images[0]?.storage_path
+		? getPickupOrderImagePublicUrl(order.images[0].storage_path)
+		: null;
+
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<View style={styles.header}>
@@ -61,9 +66,9 @@ export default function OrderDetailScreen() {
 				<OrderProgress status={order.status} />
 
 				<View style={styles.imageArea}>
-					{order.images[0]?.public_url ? (
+					{imageUrl ? (
 						<Image
-							source={{ uri: order.images[0].public_url }}
+							source={{ uri: imageUrl }}
 							style={styles.orderImage}
 						/>
 					) : (
@@ -88,10 +93,10 @@ export default function OrderDetailScreen() {
 					<Text style={styles.summaryPrice}>
 						{estimatedRange
 							? `${formatVndAmount(
-									estimatedRange.min
-							  )} ~ ${formatVndAmount(
-									estimatedRange.max
-							  )} ${estimatedRange.currency}`
+								estimatedRange.min
+							)} ~ ${formatVndAmount(
+								estimatedRange.max
+							)} ${estimatedRange.currency}`
 							: "Đang cập nhật giá"}
 					</Text>
 				</View>
@@ -138,23 +143,23 @@ function OrderProgress({
 	status,
 }: {
 	status:
-		| "pending"
-		| "confirmed"
-		| "rejected"
-		| "on_the_way"
-		| "completed"
-		| "cancelled";
+	| "pending"
+	| "confirmed"
+	| "rejected"
+	| "on_the_way"
+	| "completed"
+	| "cancelled";
 }) {
 	const currentStep =
 		status === "pending"
 			? 1
 			: status === "confirmed"
-			? 2
-			: status === "on_the_way"
-			? 3
-			: status === "completed"
-			? 4
-			: 1;
+				? 2
+				: status === "on_the_way"
+					? 3
+					: status === "completed"
+						? 4
+						: 1;
 
 	const steps = ["Chờ xác nhận", "Xác nhận", "Đang tới", "Hoàn thành"];
 
@@ -301,7 +306,7 @@ const styles = StyleSheet.create({
 		color: "#71727A",
 	},
 	progressNumberActive: {
-		color: "#FFFFFF",
+		color: "#3B82F6",
 	},
 	progressLabel: {
 		marginTop: 8,

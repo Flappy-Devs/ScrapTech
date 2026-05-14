@@ -61,3 +61,11 @@ export async function uploadPickupOrderImage(params: {
 		publicUrl: data.publicUrl ?? null,
 	};
 }
+
+export function getPickupOrderImagePublicUrl(storagePath: string): string {
+	const { data } = supabase.storage
+		.from(ORDER_IMAGE_BUCKET)
+		.getPublicUrl(storagePath);
+
+	return data.publicUrl;
+}
