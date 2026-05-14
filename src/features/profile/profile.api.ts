@@ -2,14 +2,13 @@ import { throwIfSupabaseError } from "@/src/lib/api-error";
 import { supabase } from "@/src/lib/supabase";
 import { Profile, Updates } from "@/src/types/app.types";
 
-
 export async function getMyProfile(): Promise<Profile | null> {
 	const {
 		data: { user },
-		error: authError,
+		error: userError,
 	} = await supabase.auth.getUser();
 
-	throwIfSupabaseError(authError);
+	throwIfSupabaseError(userError);
 
 	if (!user) {
 		return null;
@@ -23,7 +22,7 @@ export async function getMyProfile(): Promise<Profile | null> {
 
 	throwIfSupabaseError(error);
 
-	return data;
+	return data as Profile | null;
 }
 
 export async function updateMyProfile(

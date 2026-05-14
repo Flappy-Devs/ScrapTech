@@ -26,6 +26,7 @@ export default function AppLayout() {
 					),
 				}}
 			/>
+
 			<Tabs.Screen
 				name="order-history"
 				options={{
@@ -40,6 +41,7 @@ export default function AppLayout() {
 					),
 				}}
 			/>
+
 			<Tabs.Screen
 				name="user-info"
 				options={{
@@ -54,13 +56,31 @@ export default function AppLayout() {
 					),
 				}}
 			/>
+
 			<Tabs.Screen
 				name="settings"
 				options={{
-					headerTitle: "Cài đặt",
+					headerShown: false,
 					href: null,
 				}}
 			/>
+
+			<Tabs.Screen
+				name="privacy-safety"
+				options={{
+					headerShown: false,
+					href: null,
+				}}
+			/>
+
+			<Tabs.Screen
+				name="notifications"
+				options={{
+					headerShown: false,
+					href: null,
+				}}
+			/>
+
 			<Tabs.Screen
 				name="orders"
 				options={{

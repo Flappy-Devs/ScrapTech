@@ -1,66 +1,59 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
+import { useState } from "react";
 import {
 	Pressable,
 	ScrollView,
 	StyleSheet,
+	Switch,
 	Text,
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useThemeColors } from "@/src/hooks/useThemeColors";
-
-export default function SettingsScreen() {
-	const colors = useThemeColors();
+export default function PrivacySafetyScreen() {
+	const [secureNotifications, setSecureNotifications] = useState(true);
+	const [activityProtection, setActivityProtection] = useState(false);
 
 	return (
-		<SafeAreaView
-			style={[
-				styles.safeArea,
-				{ backgroundColor: colors.neutral.light.lightest },
-			]}
-		>
+		<SafeAreaView style={styles.safeArea}>
 			<ScrollView
 				contentContainerStyle={styles.content}
 				showsVerticalScrollIndicator={false}
 			>
-				<ScreenHeader title="Cài đặt ứng dụng" />
+				<ScreenHeader title="Quyền riêng tư và an toàn" />
 
-				<Text style={styles.sectionTitle}>Tài khoản</Text>
+				<Text style={styles.sectionTitle}>Quyền riêng tư</Text>
 				<View style={styles.card}>
-					<SettingRow
-						icon="person-outline"
-						label="Thông tin cá nhân"
-						description="Quản lý hồ sơ tài khoản"
+					<BasicRow
+						icon="document-text-outline"
+						label="Chính sách quyền riêng tư"
+						description="Xem cách dữ liệu cá nhân được sử dụng"
 					/>
 					<Divider />
-					<SettingRow
-						icon="location-outline"
-						label="Địa chỉ đã lưu"
-						description="Xem và cập nhật địa chỉ mặc định"
+					<BasicRow
+						icon="server-outline"
+						label="Quản lý dữ liệu"
+						description="Kiểm tra thông tin lưu trữ trong tài khoản"
 					/>
 				</View>
 
-				<Text style={styles.sectionTitle}>Ứng dụng</Text>
+				<Text style={styles.sectionTitle}>Bảo mật</Text>
 				<View style={styles.card}>
-					<SettingRow
-						icon="language-outline"
-						label="Ngôn ngữ"
-						value="Tiếng Việt"
+					<ToggleRow
+						icon="notifications-circle-outline"
+						label="Cảnh báo bảo mật"
+						description="Nhận thông báo khi có hoạt động bất thường"
+						value={secureNotifications}
+						onValueChange={setSecureNotifications}
 					/>
 					<Divider />
-					<SettingRow
-						icon="sunny-outline"
-						label="Giao diện"
-						value="Sáng"
-					/>
-					<Divider />
-					<SettingRow
-						icon="information-circle-outline"
-						label="Phiên bản ứng dụng"
-						value="1.0.0"
-						hideChevron
+					<ToggleRow
+						icon="shield-checkmark-outline"
+						label="Bảo vệ hoạt động"
+						description="Tăng cường quyền riêng tư khi sử dụng ứng dụng"
+						value={activityProtection}
+						onValueChange={setActivityProtection}
 					/>
 				</View>
 			</ScrollView>
@@ -82,33 +75,51 @@ function ScreenHeader({ title }: { title: string }) {
 	);
 }
 
-function SettingRow(props: {
+function BasicRow(props: {
 	icon: keyof typeof Ionicons.glyphMap;
 	label: string;
-	description?: string;
-	value?: string;
-	hideChevron?: boolean;
+	description: string;
 }) {
 	return (
 		<View style={styles.row}>
 			<View style={styles.rowIcon}>
-				<Ionicons name={props.icon} size={20} color="#22C55E" />
+				<Ionicons name={props.icon} size={20} color="#A855F7" />
 			</View>
 
 			<View style={styles.rowContent}>
 				<Text style={styles.rowLabel}>{props.label}</Text>
-				{props.description ? (
-					<Text style={styles.rowDescription}>{props.description}</Text>
-				) : null}
+				<Text style={styles.rowDescription}>{props.description}</Text>
 			</View>
 
-			{props.value ? (
-				<Text style={styles.rowValue}>{props.value}</Text>
-			) : null}
+			<Ionicons name="chevron-forward" size={18} color="#C5C6CC" />
+		</View>
+	);
+}
 
-			{!props.hideChevron ? (
-				<Ionicons name="chevron-forward" size={18} color="#C5C6CC" />
-			) : null}
+function ToggleRow(props: {
+	icon: keyof typeof Ionicons.glyphMap;
+	label: string;
+	description: string;
+	value: boolean;
+	onValueChange: (value: boolean) => void;
+}) {
+	return (
+		<View style={styles.row}>
+			<View style={styles.rowIcon}>
+				<Ionicons name={props.icon} size={20} color="#A855F7" />
+			</View>
+
+			<View style={styles.rowContent}>
+				<Text style={styles.rowLabel}>{props.label}</Text>
+				<Text style={styles.rowDescription}>{props.description}</Text>
+			</View>
+
+			<Switch
+				value={props.value}
+				onValueChange={props.onValueChange}
+				trackColor={{ false: "#E8E9F1", true: "#D8B4FE" }}
+				thumbColor={props.value ? "#A855F7" : "#FFFFFF"}
+			/>
 		</View>
 	);
 }
@@ -120,6 +131,7 @@ function Divider() {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
+		backgroundColor: "#FFFFFF",
 	},
 	content: {
 		paddingHorizontal: 20,
@@ -144,7 +156,7 @@ const styles = StyleSheet.create({
 		width: 38,
 	},
 	headerTitle: {
-		fontSize: 18,
+		fontSize: 17,
 		fontWeight: "800",
 		color: "#1E1E1E",
 	},
@@ -167,7 +179,7 @@ const styles = StyleSheet.create({
 		elevation: 3,
 	},
 	row: {
-		minHeight: 72,
+		minHeight: 78,
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: 16,
@@ -178,11 +190,12 @@ const styles = StyleSheet.create({
 		borderRadius: 18,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#DCFCE7",
+		backgroundColor: "#F7F0FF",
 		marginRight: 14,
 	},
 	rowContent: {
 		flex: 1,
+		paddingRight: 10,
 	},
 	rowLabel: {
 		fontSize: 13,
@@ -194,12 +207,6 @@ const styles = StyleSheet.create({
 		fontSize: 11,
 		lineHeight: 15,
 		color: "#71727A",
-	},
-	rowValue: {
-		fontSize: 12,
-		fontWeight: "700",
-		color: "#71727A",
-		marginRight: 8,
 	},
 	divider: {
 		height: 1,

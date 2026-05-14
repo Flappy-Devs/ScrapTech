@@ -1,66 +1,65 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
+import { useState } from "react";
 import {
 	Pressable,
 	ScrollView,
 	StyleSheet,
+	Switch,
 	Text,
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useThemeColors } from "@/src/hooks/useThemeColors";
-
-export default function SettingsScreen() {
-	const colors = useThemeColors();
+export default function NotificationsScreen() {
+	const [pushEnabled, setPushEnabled] = useState(true);
+	const [orderUpdates, setOrderUpdates] = useState(true);
+	const [reminderEnabled, setReminderEnabled] = useState(false);
+	const [soundEnabled, setSoundEnabled] = useState(true);
 
 	return (
-		<SafeAreaView
-			style={[
-				styles.safeArea,
-				{ backgroundColor: colors.neutral.light.lightest },
-			]}
-		>
+		<SafeAreaView style={styles.safeArea}>
 			<ScrollView
 				contentContainerStyle={styles.content}
 				showsVerticalScrollIndicator={false}
 			>
-				<ScreenHeader title="Cài đặt ứng dụng" />
+				<ScreenHeader title="Thông báo và âm thanh" />
 
-				<Text style={styles.sectionTitle}>Tài khoản</Text>
+				<Text style={styles.sectionTitle}>Thông báo</Text>
 				<View style={styles.card}>
-					<SettingRow
-						icon="person-outline"
-						label="Thông tin cá nhân"
-						description="Quản lý hồ sơ tài khoản"
+					<ToggleRow
+						icon="notifications-outline"
+						label="Thông báo đẩy"
+						description="Nhận thông báo từ ứng dụng"
+						value={pushEnabled}
+						onValueChange={setPushEnabled}
 					/>
 					<Divider />
-					<SettingRow
-						icon="location-outline"
-						label="Địa chỉ đã lưu"
-						description="Xem và cập nhật địa chỉ mặc định"
+					<ToggleRow
+						icon="receipt-outline"
+						label="Cập nhật đơn hàng"
+						description="Nhận trạng thái mới nhất của đơn thu gom"
+						value={orderUpdates}
+						onValueChange={setOrderUpdates}
+					/>
+					<Divider />
+					<ToggleRow
+						icon="alarm-outline"
+						label="Nhắc lịch thu gom"
+						description="Nhắc trước khi đơn hàng đến lịch xử lý"
+						value={reminderEnabled}
+						onValueChange={setReminderEnabled}
 					/>
 				</View>
 
-				<Text style={styles.sectionTitle}>Ứng dụng</Text>
+				<Text style={styles.sectionTitle}>Âm thanh</Text>
 				<View style={styles.card}>
-					<SettingRow
-						icon="language-outline"
-						label="Ngôn ngữ"
-						value="Tiếng Việt"
-					/>
-					<Divider />
-					<SettingRow
-						icon="sunny-outline"
-						label="Giao diện"
-						value="Sáng"
-					/>
-					<Divider />
-					<SettingRow
-						icon="information-circle-outline"
-						label="Phiên bản ứng dụng"
-						value="1.0.0"
-						hideChevron
+					<ToggleRow
+						icon="volume-high-outline"
+						label="Âm thanh và rung"
+						description="Phát âm báo khi có thông báo mới"
+						value={soundEnabled}
+						onValueChange={setSoundEnabled}
 					/>
 				</View>
 			</ScrollView>
@@ -82,33 +81,30 @@ function ScreenHeader({ title }: { title: string }) {
 	);
 }
 
-function SettingRow(props: {
+function ToggleRow(props: {
 	icon: keyof typeof Ionicons.glyphMap;
 	label: string;
-	description?: string;
-	value?: string;
-	hideChevron?: boolean;
+	description: string;
+	value: boolean;
+	onValueChange: (value: boolean) => void;
 }) {
 	return (
 		<View style={styles.row}>
 			<View style={styles.rowIcon}>
-				<Ionicons name={props.icon} size={20} color="#22C55E" />
+				<Ionicons name={props.icon} size={20} color="#C4D600" />
 			</View>
 
 			<View style={styles.rowContent}>
 				<Text style={styles.rowLabel}>{props.label}</Text>
-				{props.description ? (
-					<Text style={styles.rowDescription}>{props.description}</Text>
-				) : null}
+				<Text style={styles.rowDescription}>{props.description}</Text>
 			</View>
 
-			{props.value ? (
-				<Text style={styles.rowValue}>{props.value}</Text>
-			) : null}
-
-			{!props.hideChevron ? (
-				<Ionicons name="chevron-forward" size={18} color="#C5C6CC" />
-			) : null}
+			<Switch
+				value={props.value}
+				onValueChange={props.onValueChange}
+				trackColor={{ false: "#E8E9F1", true: "#EEF58A" }}
+				thumbColor={props.value ? "#C4D600" : "#FFFFFF"}
+			/>
 		</View>
 	);
 }
@@ -120,6 +116,7 @@ function Divider() {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
+		backgroundColor: "#FFFFFF",
 	},
 	content: {
 		paddingHorizontal: 20,
@@ -144,7 +141,7 @@ const styles = StyleSheet.create({
 		width: 38,
 	},
 	headerTitle: {
-		fontSize: 18,
+		fontSize: 17,
 		fontWeight: "800",
 		color: "#1E1E1E",
 	},
@@ -167,7 +164,7 @@ const styles = StyleSheet.create({
 		elevation: 3,
 	},
 	row: {
-		minHeight: 72,
+		minHeight: 78,
 		flexDirection: "row",
 		alignItems: "center",
 		paddingHorizontal: 16,
@@ -178,11 +175,12 @@ const styles = StyleSheet.create({
 		borderRadius: 18,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#DCFCE7",
+		backgroundColor: "#FBFDEB",
 		marginRight: 14,
 	},
 	rowContent: {
 		flex: 1,
+		paddingRight: 10,
 	},
 	rowLabel: {
 		fontSize: 13,
@@ -194,12 +192,6 @@ const styles = StyleSheet.create({
 		fontSize: 11,
 		lineHeight: 15,
 		color: "#71727A",
-	},
-	rowValue: {
-		fontSize: 12,
-		fontWeight: "700",
-		color: "#71727A",
-		marginRight: 8,
 	},
 	divider: {
 		height: 1,
