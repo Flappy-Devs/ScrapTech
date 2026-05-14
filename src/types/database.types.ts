@@ -254,7 +254,7 @@ export type Database = {
           address_id: string | null
           address_snapshot: Json
           admin_note: string | null
-          assigned_collector_id: string | null
+          assigned_admin_id: string | null
           cancelled_at: string | null
           completed_at: string | null
           confirmed_at: string | null
@@ -277,7 +277,7 @@ export type Database = {
           address_id?: string | null
           address_snapshot: Json
           admin_note?: string | null
-          assigned_collector_id?: string | null
+          assigned_admin_id?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           confirmed_at?: string | null
@@ -300,7 +300,7 @@ export type Database = {
           address_id?: string | null
           address_snapshot?: Json
           admin_note?: string | null
-          assigned_collector_id?: string | null
+          assigned_admin_id?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           confirmed_at?: string | null
@@ -328,8 +328,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "pickup_orders_assigned_collector_id_fkey"
-            columns: ["assigned_collector_id"]
+            foreignKeyName: "pickup_orders_assigned_admin_id_fkey"
+            columns: ["assigned_admin_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -375,7 +375,7 @@ export type Database = {
       }
       reviews: {
         Row: {
-          collector_id: string | null
+          admin_id: string | null
           comment: string | null
           created_at: string
           id: string
@@ -384,7 +384,7 @@ export type Database = {
           seller_id: string
         }
         Insert: {
-          collector_id?: string | null
+          admin_id?: string | null
           comment?: string | null
           created_at?: string
           id?: string
@@ -393,7 +393,7 @@ export type Database = {
           seller_id: string
         }
         Update: {
-          collector_id?: string | null
+          admin_id?: string | null
           comment?: string | null
           created_at?: string
           id?: string
@@ -403,8 +403,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "reviews_collector_id_fkey"
-            columns: ["collector_id"]
+            foreignKeyName: "reviews_admin_id_fkey"
+            columns: ["admin_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1551,7 +1551,7 @@ export type Database = {
         | "completed"
         | "cancelled"
       scrap_unit: "kg" | "item"
-      user_role: "seller" | "collector" | "admin"
+      user_role: "seller" | "admin"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -1703,7 +1703,7 @@ export const Constants = {
         "cancelled",
       ],
       scrap_unit: ["kg", "item"],
-      user_role: ["seller", "collector", "admin"],
+      user_role: ["seller", "admin"],
     },
   },
 } as const

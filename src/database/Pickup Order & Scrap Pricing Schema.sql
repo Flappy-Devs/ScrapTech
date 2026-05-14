@@ -8,7 +8,6 @@ create extension if not exists "postgis";
 
 create type user_role as enum (
   'seller',
-  'collector',
   'admin'
 );
 
@@ -116,7 +115,7 @@ create table public.pickup_orders (
   id uuid primary key default uuid_generate_v4(),
 
   seller_id uuid not null references public.profiles(id) on delete cascade,
-  assigned_collector_id uuid references public.profiles(id),
+  assigned_admin_id uuid references public.profiles(id),
 
   status order_status not null default 'pending',
 
@@ -213,7 +212,7 @@ create table public.reviews (
 
   order_id uuid not null unique references public.pickup_orders(id) on delete cascade,
   seller_id uuid not null references public.profiles(id) on delete cascade,
-  collector_id uuid references public.profiles(id),
+  admin_id uuid references public.profiles(id),
 
   rating int not null check (rating >= 1 and rating <= 5),
   comment text,
@@ -267,7 +266,7 @@ create index idx_addresses_user_id on public.addresses(user_id);
 create index idx_scrap_prices_category on public.scrap_prices(scrap_category_id);
 create index idx_scrap_prices_active on public.scrap_prices(is_active);
 create index idx_orders_seller_id on public.pickup_orders(seller_id);
-create index idx_orders_collector_id on public.pickup_orders(assigned_collector_id);
+create index idx_orders_assigned_admin_id on public.pickup_orders(assigned_admin_id);
 create index idx_orders_status on public.pickup_orders(status);
 create index idx_orders_scheduled_date on public.pickup_orders(scheduled_date);
 create index idx_order_items_order_id on public.pickup_order_items(order_id);
