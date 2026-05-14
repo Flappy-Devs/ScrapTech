@@ -1,79 +1,102 @@
 import { useCallback, useEffect } from "react";
 import { AppState } from "react-native";
 
-import { supabase } from "@/src/api";
+import {
+	getCurrentSession,
+	requestLoginOtp,
+	requestSignupOtp,
+	signOutCurrentUser,
+	verifyPhoneOtp,
+} from "@/src/features/auth/auth.api";
+import { supabase } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/store/useAuthStore";
 
+export function useAuthBootstrap() {
+	const { setSession, clearSession, setLoading } = useAuthStore();
+
+	useEffect(() => {
+		let isMounted = true;
+
+		async function restoreSession() {
+			try {
+				setLoading(true);
+
+				const session = await getCurrentSession();
+
+				if (!isMounted) return;
+
+				setSession(session);
+			} catch {
+				if (!isMounted) return;
+
+				clearSession();
+			}
+		}
+
+		void restoreSession();
+
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			if (!isMounted) return;
+
+			setSession(session);
+		});
+
+		return () => {
+			isMounted = false;
+			subscription.unsubscribe();
+		};
+	}, [clearSession, setLoading, setSession]);
+
+	useEffect(() => {
+		if (AppState.currentState === "active") {
+			supabase.auth.startAutoRefresh();
+		}
+
+		const subscription = AppState.addEventListener("change", (state) => {
+			if (state === "active") {
+				supabase.auth.startAutoRefresh();
+			} else {
+				supabase.auth.stopAutoRefresh();
+			}
+		});
+
+		return () => {
+			subscription.remove();
+			supabase.auth.stopAutoRefresh();
+		};
+	}, []);
+}
+
 export function useAuth() {
-    const { setSession, clearSession } = useAuthStore();
+	const authState = useAuthStore();
 
-    // ── Auth state listener ──────────────────────────────────────────────
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-        });
+	const sendLoginOtp = useCallback(async (phone: string) => {
+		await requestLoginOtp(phone);
+	}, []);
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-        });
+	const sendSignupOtp = useCallback(async (phone: string) => {
+		await requestSignupOtp(phone);
+	}, []);
 
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [setSession]);
+	const confirmPhoneOtp = useCallback(
+		async (phone: string, token: string) => {
+			return verifyPhoneOtp(phone, token);
+		},
+		[]
+	);
 
-    useEffect(() => {
-        const handler = AppState.addEventListener('change', (state) => {
-            if (state === 'active') {
-                supabase.auth.startAutoRefresh();
-            } else {
-                supabase.auth.stopAutoRefresh();
-            }
-        });
+	const signOut = useCallback(async () => {
+		await signOutCurrentUser();
+		useAuthStore.getState().clearSession();
+	}, []);
 
-        return () => {
-            handler.remove();
-        };
-    }, []);
-
-
-    const signUp = useCallback(
-        async (email: string, password: string) => {
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-            });
-            if (error) throw error;
-            return data;
-        },
-        [],
-    );
-
-    const signIn = useCallback(
-        async (email: string, password: string) => {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-            if (error) throw error;
-            return data;
-        },
-        [],
-    );
-
-    const signOut = useCallback(async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        clearSession();
-    }, [clearSession]);
-
-    const sendMagicLink = useCallback(async (email: string) => {
-        const { data, error } = await supabase.auth.signInWithOtp({
-            email,
-        });
-        if (error) throw error;
-        return data;
-    }, []);
-
-    return { signUp, signIn, signOut, sendMagicLink };
+	return {
+		...authState,
+		sendLoginOtp,
+		sendSignupOtp,
+		confirmPhoneOtp,
+		signOut,
+	};
 }

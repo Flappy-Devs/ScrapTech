@@ -1,73 +1,303 @@
-import { Link } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Link, router } from "expo-router";
+import { useMemo, useState } from "react";
+import {
+	ActivityIndicator,
+	Alert,
+	KeyboardAvoidingView,
+	Platform,
+	Pressable,
+	SafeAreaView,
+	StyleSheet,
+	Text,
+	TextInput,
+	View,
+} from "react-native";
 
-import { useThemeColors } from "@/src/hooks/useThemeColors";
+import {
+	isValidPhoneNumber,
+	normalizePhoneNumber,
+} from "@/src/features/auth/auth.api";
 import { useAuth } from "@/src/hooks/useAuth";
+import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 export default function RegisterScreen() {
-	const c = useThemeColors();
+	const colors = useThemeColors();
+	const { sendSignupOtp } = useAuth();
 
-	const { signUp } = useAuth();
+	const [lastName, setLastName] = useState("");
+	const [firstName, setFirstName] = useState("");
+	const [phone, setPhone] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
+	const normalizedPhone = useMemo(
+		() => normalizePhoneNumber(phone),
+		[phone]
+	);
 
-	const [loading, setLoading] = useState(false);
+	const fullName = `${lastName.trim()} ${firstName.trim()}`.trim();
 
-	const handleSignUp = async () => {
-		if (!email || !password) return;
-		if (password !== confirmPassword) {
-			Alert.alert("Passwords do not match");
-			return;
-		}
-		setLoading(true);
+	const canSubmit =
+		lastName.trim().length > 0 &&
+		firstName.trim().length > 0 &&
+		isValidPhoneNumber(normalizedPhone) &&
+		!isSubmitting;
+
+	async function handleSignup() {
+		if (!canSubmit) return;
+
 		try {
-			await signUp(email, password);
-			Alert.alert("Success", "Check your email for verification!");
-		} catch (error: any) {
-			Alert.alert(error.message);
+			setIsSubmitting(true);
+
+			await sendSignupOtp(normalizedPhone);
+
+			router.push({
+				pathname: "/(auth)/verify-otp",
+				params: {
+					phone: normalizedPhone,
+					flow: "signup",
+					fullName,
+				},
+			});
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Không thể gửi mã OTP. Vui lòng thử lại.";
+
+			Alert.alert("Đăng ký thất bại", message);
 		} finally {
-			setLoading(false);
+			setIsSubmitting(false);
 		}
-	};
+	}
 
 	return (
-		<KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={[styles.container, { backgroundColor: c.neutral.light.lightest }]}>
-			<View style={styles.inner}>
-				<Text style={[styles.appName, { color: c.highlight.medium }]}>{"ScrapTech"}</Text>
-				<Text style={[styles.title, { color: c.neutral.dark.darkest }]}>{"Đăng ký"}</Text>
+		<SafeAreaView
+			style={[
+				styles.safeArea,
+				{ backgroundColor: colors.neutral.light.lightest },
+			]}
+		>
+			<KeyboardAvoidingView
+				style={styles.container}
+				behavior={Platform.OS === "ios" ? "padding" : undefined}
+			>
+				<View style={styles.content}>
+					<View style={styles.header}>
+						<Text
+							style={[
+								styles.title,
+								{ color: colors.neutral.dark.darkest },
+							]}
+						>
+							Tạo tài khoản
+						</Text>
 
-				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={"Email"} placeholderTextColor={c.neutral.dark.light} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+						<Text
+							style={[
+								styles.subtitle,
+								{ color: colors.neutral.dark.light },
+							]}
+						>
+							Sạch nhà, Xanh đất nước
+						</Text>
+					</View>
 
-				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={"Mật khẩu"} placeholderTextColor={c.neutral.dark.light} value={password} onChangeText={setPassword} secureTextEntry />
+					<View style={styles.form}>
+						<Text
+							style={[
+								styles.label,
+								{ color: colors.neutral.dark.darkest },
+							]}
+						>
+							Họ
+						</Text>
 
-				<TextInput style={[styles.input, { color: c.neutral.dark.darkest, borderColor: c.neutral.light.medium, backgroundColor: c.neutral.light.light }]} placeholder={"Nhập lại mật khẩu"} placeholderTextColor={c.neutral.dark.light} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+						<TextInput
+							style={[
+								styles.input,
+								{
+									color: colors.neutral.dark.darkest,
+									borderColor: colors.neutral.light.medium,
+									backgroundColor: colors.neutral.light.lightest,
+								},
+							]}
+							value={lastName}
+							onChangeText={setLastName}
+							placeholder="Hãy điền họ của bạn"
+							placeholderTextColor={colors.neutral.dark.light}
+							autoCapitalize="words"
+							returnKeyType="next"
+						/>
 
-				<Pressable style={[styles.button, { backgroundColor: c.highlight.medium }, loading && styles.buttonDisabled]} onPress={handleSignUp} disabled={loading}>
-					{loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{"Đăng ký"}</Text>}
-				</Pressable>
+						<Text
+							style={[
+								styles.label,
+								{ color: colors.neutral.dark.darkest },
+							]}
+						>
+							Tên
+						</Text>
 
-				<Link href="/(auth)/login" asChild>
-					<Pressable style={styles.linkRow}>
-						<Text style={{ color: c.neutral.dark.darkest }}>{"Đã có tài khoản?"}</Text>
-						<Text style={{ color: c.highlight.medium, fontWeight: "600", marginLeft: 4 }}>{"Đăng nhập"}</Text>
-					</Pressable>
-				</Link>
-			</View>
-		</KeyboardAvoidingView>
+						<TextInput
+							style={[
+								styles.input,
+								{
+									color: colors.neutral.dark.darkest,
+									borderColor: colors.neutral.light.medium,
+									backgroundColor: colors.neutral.light.lightest,
+								},
+							]}
+							value={firstName}
+							onChangeText={setFirstName}
+							placeholder="Hãy điền tên của bạn"
+							placeholderTextColor={colors.neutral.dark.light}
+							autoCapitalize="words"
+							returnKeyType="next"
+						/>
+
+						<Text
+							style={[
+								styles.label,
+								{ color: colors.neutral.dark.darkest },
+							]}
+						>
+							Số điện thoại
+						</Text>
+
+						<TextInput
+							style={[
+								styles.input,
+								{
+									color: colors.neutral.dark.darkest,
+									borderColor: colors.neutral.light.medium,
+									backgroundColor: colors.neutral.light.lightest,
+								},
+							]}
+							value={phone}
+							onChangeText={setPhone}
+							placeholder="Hãy điền số điện thoại của bạn"
+							placeholderTextColor={colors.neutral.dark.light}
+							keyboardType="phone-pad"
+							autoCorrect={false}
+							returnKeyType="done"
+							onSubmitEditing={handleSignup}
+						/>
+
+						<Pressable
+							style={[
+								styles.button,
+								{ backgroundColor: colors.highlight.medium },
+								!canSubmit && styles.buttonDisabled,
+							]}
+							onPress={handleSignup}
+							disabled={!canSubmit}
+						>
+							{isSubmitting ? (
+								<ActivityIndicator color="#fff" />
+							) : (
+								<Text style={styles.buttonText}>Đăng ký</Text>
+							)}
+						</Pressable>
+					</View>
+
+					<View style={styles.footerRow}>
+						<Text
+							style={[
+								styles.footerText,
+								{ color: colors.neutral.dark.darkest },
+							]}
+						>
+							Đã có tài khoản?
+						</Text>
+
+						<Link href="/(auth)/login" asChild>
+							<Pressable>
+								<Text
+									style={[
+										styles.footerLink,
+										{ color: colors.highlight.medium },
+									]}
+								>
+									Đăng nhập
+								</Text>
+							</Pressable>
+						</Link>
+					</View>
+				</View>
+			</KeyboardAvoidingView>
+		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1 },
-	inner: { flex: 1, justifyContent: "center", padding: 28 },
-	appName: { fontSize: 36, fontWeight: "800", textAlign: "center", marginBottom: 4 },
-	title: { fontSize: 18, textAlign: "center", marginBottom: 32 },
-	input: { borderWidth: 1, borderRadius: 12, padding: 16, fontSize: 16, marginBottom: 14 },
-	button: { padding: 16, borderRadius: 12, alignItems: "center", marginTop: 8, marginBottom: 20 },
-	buttonDisabled: { opacity: 0.6 },
-	buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-	linkRow: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
+	safeArea: {
+		flex: 1,
+	},
+	container: {
+		flex: 1,
+	},
+	content: {
+		flex: 1,
+		justifyContent: "center",
+		paddingHorizontal: 28,
+		paddingBottom: 40,
+	},
+	header: {
+		marginBottom: 24,
+	},
+	title: {
+		fontSize: 24,
+		fontWeight: "800",
+		lineHeight: 30,
+		marginBottom: 6,
+	},
+	subtitle: {
+		fontSize: 12,
+		lineHeight: 16,
+	},
+	form: {
+		marginBottom: 16,
+	},
+	label: {
+		fontSize: 12,
+		fontWeight: "700",
+		marginBottom: 8,
+	},
+	input: {
+		height: 46,
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingHorizontal: 14,
+		fontSize: 13,
+		marginBottom: 14,
+	},
+	button: {
+		height: 46,
+		borderRadius: 10,
+		alignItems: "center",
+		justifyContent: "center",
+		marginTop: 4,
+	},
+	buttonDisabled: {
+		opacity: 0.55,
+	},
+	buttonText: {
+		color: "#fff",
+		fontSize: 13,
+		fontWeight: "700",
+	},
+	footerRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 4,
+	},
+	footerText: {
+		fontSize: 12,
+		fontWeight: "600",
+	},
+	footerLink: {
+		fontSize: 12,
+		fontWeight: "700",
+	},
 });

@@ -1,23 +1,34 @@
 import "react-native-reanimated";
 import "@/src/i18n/config";
 
-import { Slot } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Fragment } from "react";
 
+import { useAuthBootstrap } from "@/src/hooks/useAuth";
 import { useAuthStore } from "@/src/store/useAuthStore";
-import { useAuth } from "@/src/hooks/useAuth";
 
 export default function RootLayout() {
-	useAuth();
-	const { isLoading } = useAuthStore();
+	useAuthBootstrap();
 
-	if (isLoading) return null;
+	const { session, isLoading } = useAuthStore();
+
+	if (isLoading) {
+		return null;
+	}
 
 	return (
-		<Fragment>
-			<Slot />
+		<>
+			<Stack screenOptions={{ headerShown: false }}>
+				<Stack.Protected guard={!session}>
+					<Stack.Screen name="(auth)" />
+				</Stack.Protected>
+
+				<Stack.Protected guard={Boolean(session)}>
+					<Stack.Screen name="(app)" />
+				</Stack.Protected>
+			</Stack>
+
 			<StatusBar style="auto" />
-		</Fragment>
+		</>
 	);
 }

@@ -2,24 +2,28 @@ import "react-native-url-polyfill/auto";
 import "expo-sqlite/localStorage/install";
 
 import { createClient } from "@supabase/supabase-js";
-import { Database } from "../types/database.types";
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_KEY!;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 
-if (!supabaseUrl || !supabasePublishableKey) {
-	throw new Error("Missing Supabase environment variables.");
+const supabaseKey =
+	process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+	process.env.EXPO_PUBLIC_SUPABASE_KEY;
+
+if (!supabaseUrl) {
+	throw new Error("Missing EXPO_PUBLIC_SUPABASE_URL.");
 }
 
-export const supabase = createClient<Database>(
-	supabaseUrl,
-	supabasePublishableKey,
-	{
-		auth: {
-			storage: localStorage,
-			autoRefreshToken: true,
-			persistSession: true,
-			detectSessionInUrl: false,
-		},
-	}
-);
+if (!supabaseKey) {
+	throw new Error(
+		"Missing EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY or EXPO_PUBLIC_SUPABASE_KEY."
+	);
+}
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+	auth: {
+		storage: localStorage,
+		autoRefreshToken: true,
+		persistSession: true,
+		detectSessionInUrl: false,
+	},
+});
