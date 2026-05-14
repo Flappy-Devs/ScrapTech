@@ -1,5 +1,5 @@
-import { supabase } from "@/src/api";
 import { throwIfSupabaseError } from "@/src/lib/api-error";
+import { supabase } from "@/src/lib/supabase";
 import { Profile, Updates } from "@/src/types/app.types";
 
 
