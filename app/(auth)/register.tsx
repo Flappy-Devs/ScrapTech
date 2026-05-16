@@ -6,7 +6,6 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
-	SafeAreaView,
 	StyleSheet,
 	Text,
 	TextInput,
@@ -19,6 +18,7 @@ import {
 } from "@/src/features/auth/auth.api";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
 	const colors = useThemeColors();

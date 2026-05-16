@@ -90,7 +90,7 @@ export function useAuth() {
 		[]
 	);
 
-	const loginAdmin = useCallback(async (email: string, password: string) => {
+	const loginEmailPass = useCallback(async (email: string, password: string) => {
 		await loginWithEmail(email, password);
 	}, [])
 
@@ -106,6 +106,6 @@ export function useAuth() {
 		sendSignupOtp,
 		confirmPhoneOtp,
 		signOut,
-		loginAdmin,
+		loginEmailPass,
 	};
 }

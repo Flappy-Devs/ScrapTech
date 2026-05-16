@@ -6,7 +6,6 @@ import {
     KeyboardAvoidingView,
     Platform,
     Pressable,
-    SafeAreaView,
     StyleSheet,
     Text,
     TextInput,
@@ -21,6 +20,7 @@ import {
 } from "@/src/features/auth/auth.api";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 30;

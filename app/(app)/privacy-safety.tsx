@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+	Alert,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -81,7 +82,7 @@ function BasicRow(props: {
 	description: string;
 }) {
 	return (
-		<View style={styles.row}>
+		<Pressable style={styles.row} onPress={() => {Alert.alert("Tính năng ngoài scope chưa thực hiện!")}}>
 			<View style={styles.rowIcon}>
 				<Ionicons name={props.icon} size={20} color="#A855F7" />
 			</View>
@@ -92,7 +93,7 @@ function BasicRow(props: {
 			</View>
 
 			<Ionicons name="chevron-forward" size={18} color="#C5C6CC" />
-		</View>
+		</Pressable>
 	);
 }
 

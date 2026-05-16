@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import {
+	Alert,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -90,7 +91,7 @@ function SettingRow(props: {
 	hideChevron?: boolean;
 }) {
 	return (
-		<View style={styles.row}>
+		<Pressable style={styles.row} onPress={() => {Alert.alert("Tính năng ngoài scope chưa thực hiện!")}}>
 			<View style={styles.rowIcon}>
 				<Ionicons name={props.icon} size={20} color="#22C55E" />
 			</View>
@@ -109,7 +110,7 @@ function SettingRow(props: {
 			{!props.hideChevron ? (
 				<Ionicons name="chevron-forward" size={18} color="#C5C6CC" />
 			) : null}
-		</View>
+		</Pressable>
 	);
 }
 

@@ -6,7 +6,6 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
-	SafeAreaView,
 	StyleSheet,
 	Text,
 	TextInput,
@@ -19,10 +18,11 @@ import {
 } from "@/src/features/auth/auth.api";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useThemeColors } from "@/src/hooks/useThemeColors";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
 	const colors = useThemeColors();
-	const { sendLoginOtp, confirmPhoneOtp, loginAdmin } = useAuth();
+	const { sendLoginOtp, loginEmailPass } = useAuth();
 
 	const [phone, setPhone] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,9 +65,10 @@ export default function LoginScreen() {
 	}
 
 	async function handleSellerDevLogin() {
+		const email = "flappydev@gmail.com";
+		const password = "sellerdev2357";
 		try {
-			await sendLoginOtp("+18005550123");
-			await confirmPhoneOtp("+18005550123", "789012");
+			await loginEmailPass(email, password);
 		} catch (error) {
 			const message =
 				error instanceof Error
@@ -80,8 +81,10 @@ export default function LoginScreen() {
 	}
 	
 	async function handleAdminDevLogin() {
+		const email = "vy.tranngoclam@gmail.com";
+		const password = "lamvytran2357";
 		try {
-			await loginAdmin("vy.tranngoclam@gmail.com", "lamvytran2357");
+			await loginEmailPass(email, password);
 		} catch (error) {
 			const message =
 				error instanceof Error
