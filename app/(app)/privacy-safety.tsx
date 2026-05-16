@@ -65,7 +65,10 @@ export default function PrivacySafetyScreen() {
 function ScreenHeader({ title }: { title: string }) {
 	return (
 		<View style={styles.header}>
-			<Pressable style={styles.backButton} onPress={() => router.back()}>
+			<Pressable
+				style={styles.backButton}
+				onPress={() => router.replace("/user-info")}
+			>
 				<Ionicons name="chevron-back" size={20} color="#1E1E1E" />
 			</Pressable>
 

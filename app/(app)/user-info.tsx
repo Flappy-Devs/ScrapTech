@@ -255,14 +255,6 @@ export default function UserInfoScreen() {
 
 					<MenuDivider />
 
-					<MenuRow
-						icon="notifications-outline"
-						iconColor="#C4D600"
-						iconBackground="#FBFDEB"
-						label="Thông báo và âm thanh"
-						onPress={() => router.push("/(app)/notifications")}
-					/>
-
 					<MenuDivider />
 
 					<MenuRow

@@ -1,8 +1,9 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+	ActivityIndicator,
 	Alert,
 	Image,
 	Modal,
@@ -15,29 +16,62 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useScrapCategories } from "@/src/features/catalog/catalog.hooks";
+import {
+	useMyLatestAddress,
+	useSaveMyPickupAddress,
+} from "@/src/features/addresses/addresses.hooks";
+import {
+	useActiveScrapPrices,
+	useScrapCategories,
+} from "@/src/features/catalog/catalog.hooks";
 import { useCreatePickupOrder } from "@/src/features/orders/orders.hooks";
 import {
-	buildPricedOrderItem,
+	buildPricedOrderItemFromPrice,
 	calculateEstimatedRange,
 	formatVndAmount,
 } from "@/src/features/orders/orders.pricing";
 import { uploadPickupOrderImage } from "@/src/features/storage/storage.api";
 import { supabase } from "@/src/lib/supabase";
+import type {
+	Address,
+	AddressSnapshot,
+	ScrapCategory,
+	ScrapPrice,
+} from "@/src/types/app.types";
 
 type QuantityMap = Record<string, string>;
 
 export default function NewOrderScreen() {
-	const { data: categories = [] } = useScrapCategories();
+	const { data: categories = [], isLoading: isCategoryLoading } =
+		useScrapCategories();
+	const { data: activePrices = [], isLoading: isPriceLoading } =
+		useActiveScrapPrices();
+	const { data: latestAddress, isLoading: isAddressLoading } =
+		useMyLatestAddress();
 	const createOrder = useCreatePickupOrder();
+	const savePickupAddress = useSaveMyPickupAddress();
 
 	const [imageUri, setImageUri] = useState<string | null>(null);
 	const [pickerModalVisible, setPickerModalVisible] = useState(false);
 	const [selectedDate, setSelectedDate] = useState(() => new Date());
 	const [pickupAddress, setPickupAddress] = useState("");
+	const [hasEditedAddress, setHasEditedAddress] = useState(false);
 	const [note, setNote] = useState("");
 	const [quantities, setQuantities] = useState<QuantityMap>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	useEffect(() => {
+		if (hasEditedAddress || !latestAddress) {
+			return;
+		}
+
+		setPickupAddress(formatAddress(latestAddress));
+	}, [hasEditedAddress, latestAddress]);
+
+	const latestPriceByCategory = useMemo(
+		() => buildLatestPriceMap(activePrices),
+		[activePrices]
+	);
 
 	const pricedItems = useMemo(() => {
 		return categories
@@ -48,23 +82,32 @@ export default function NewOrderScreen() {
 					return null;
 				}
 
-				return buildPricedOrderItem({
+				return buildPricedOrderItemFromPrice({
 					category,
+					price: latestPriceByCategory.get(category.id) ?? null,
 					quantity,
 				});
 			})
 			.filter(Boolean);
-	}, [categories, quantities]);
+	}, [categories, latestPriceByCategory, quantities]);
+
+	const selectedCategoriesWithoutPrice = useMemo(() => {
+		return categories.filter((category) => {
+			const quantity = Number(quantities[category.id] ?? 0);
+
+			return quantity > 0 && !latestPriceByCategory.has(category.id);
+		});
+	}, [categories, latestPriceByCategory, quantities]);
 
 	const estimatedRange = calculateEstimatedRange(
 		pricedItems as NonNullable<(typeof pricedItems)[number]>[]
 	);
+	const isCatalogLoading = isCategoryLoading || isPriceLoading;
 
 	async function handlePickFromLibrary() {
 		setPickerModalVisible(false);
 
-		const permission =
-			await ImagePicker.requestMediaLibraryPermissionsAsync();
+		const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
 		if (!permission.granted) {
 			Alert.alert(
@@ -137,8 +180,20 @@ export default function NewOrderScreen() {
 	}
 
 	async function handleSubmit() {
-		if (!pickupAddress.trim()) {
+		const addressLine = pickupAddress.trim();
+
+		if (!addressLine) {
 			Alert.alert("Thiếu địa chỉ", "Vui lòng nhập địa chỉ thu gom.");
+			return;
+		}
+
+		if (selectedCategoriesWithoutPrice.length > 0) {
+			Alert.alert(
+				"Thiếu bảng giá",
+				`Chưa có giá đang kích hoạt cho: ${selectedCategoriesWithoutPrice
+					.map((category) => category.name)
+					.join(", ")}.`
+			);
 			return;
 		}
 
@@ -177,15 +232,26 @@ export default function NewOrderScreen() {
 				imagePaths = [uploaded.storagePath];
 			}
 
+			const addressSnapshot: AddressSnapshot = {
+				address_line: addressLine,
+			};
+			const savedAddress = await ensureLatestAddress(addressSnapshot);
+
 			const orderId = await createOrder.mutateAsync({
 				scheduled_date: toDateInput(selectedDate),
+				address_id: savedAddress.id,
 				address_snapshot: {
-					address_line: pickupAddress.trim(),
+					...addressSnapshot,
+					recipient_name: savedAddress.recipient_name,
+					phone: savedAddress.phone,
+					ward: savedAddress.ward,
+					district: savedAddress.district,
+					city: savedAddress.city,
+					latitude: savedAddress.latitude,
+					longitude: savedAddress.longitude,
 				},
 				note: note.trim() || null,
-				items: pricedItems as NonNullable<
-					(typeof pricedItems)[number]
-				>[],
+				items: pricedItems as NonNullable<(typeof pricedItems)[number]>[],
 				image_paths: imagePaths,
 			});
 
@@ -196,10 +262,21 @@ export default function NewOrderScreen() {
 					? error.message
 					: "Không thể tạo đơn hàng. Vui lòng thử lại.";
 
-            console.error(message);
+			Alert.alert("Tạo đơn thất bại", message);
 		} finally {
 			setIsSubmitting(false);
 		}
+	}
+
+	async function ensureLatestAddress(address: AddressSnapshot) {
+		if (
+			latestAddress &&
+			formatAddress(latestAddress).trim() === address.address_line.trim()
+		) {
+			return latestAddress;
+		}
+
+		return savePickupAddress.mutateAsync(address);
 	}
 
 	return (
@@ -238,53 +315,31 @@ export default function NewOrderScreen() {
 
 				<Text style={styles.sectionTitle}>Khối lượng phế liệu</Text>
 
-				<View style={styles.fieldList}>
-					{categories.map((category) => (
-						<View key={category.id}>
-							<Text style={styles.fieldLabel}>
-								{category.name} <Text style={styles.required}>*</Text>
-							</Text>
-							<Text style={styles.fieldHelper}>
-								{category.unit === "item"
-									? "Số lượng đồ điện tử bạn muốn bán"
-									: `Khối lượng ${category.name.toLowerCase()} bạn muốn bán`}
-							</Text>
+				{isCatalogLoading ? (
+					<View style={styles.loadingBox}>
+						<ActivityIndicator size="large" color="#22C55E" />
+					</View>
+				) : (
+					<View style={styles.fieldList}>
+						{categories.map((category) => {
+							const price = latestPriceByCategory.get(category.id) ?? null;
 
-							<View style={styles.quantityInputWrap}>
-								<TextInput
+							return (
+								<CategoryQuantityField
+									key={category.id}
+									category={category}
+									price={price}
 									value={quantities[category.id] ?? ""}
 									onChangeText={(value) =>
 										updateQuantity(category.id, value)
 									}
-									keyboardType="decimal-pad"
-									placeholder="0"
-									style={styles.quantityInput}
+									onIncrement={() => incrementQuantity(category.id)}
+									onDecrement={() => decrementQuantity(category.id)}
 								/>
-
-								<View style={styles.stepperWrap}>
-									<Pressable
-										onPress={() => incrementQuantity(category.id)}
-									>
-										<Ionicons
-											name="chevron-up"
-											size={18}
-											color="#1E1E1E"
-										/>
-									</Pressable>
-									<Pressable
-										onPress={() => decrementQuantity(category.id)}
-									>
-										<Ionicons
-											name="chevron-down"
-											size={18}
-											color="#1E1E1E"
-										/>
-									</Pressable>
-								</View>
-							</View>
-						</View>
-					))}
-				</View>
+							);
+						})}
+					</View>
+				)}
 
 				<Text style={styles.sectionTitle}>Thời gian</Text>
 
@@ -302,8 +357,15 @@ export default function NewOrderScreen() {
 
 					<TextInput
 						value={pickupAddress}
-						onChangeText={setPickupAddress}
-						placeholder="Nhập địa chỉ thu gom"
+						onChangeText={(value) => {
+							setHasEditedAddress(true);
+							setPickupAddress(value);
+						}}
+						placeholder={
+							isAddressLoading
+								? "Đang tải địa chỉ gần nhất..."
+								: "Nhập địa chỉ thu gom"
+						}
 						multiline
 						style={styles.addressInput}
 					/>
@@ -329,10 +391,7 @@ export default function NewOrderScreen() {
 			</ScrollView>
 
 			<View style={styles.footer}>
-				<Pressable
-					style={styles.cancelButton}
-					onPress={() => router.back()}
-				>
+				<Pressable style={styles.cancelButton} onPress={() => router.back()}>
 					<Text style={styles.cancelButtonText}>Hủy</Text>
 				</Pressable>
 
@@ -344,9 +403,11 @@ export default function NewOrderScreen() {
 					disabled={isSubmitting}
 					onPress={handleSubmit}
 				>
-					<Text style={styles.submitButtonText}>
-						{isSubmitting ? "Đang tạo..." : "Hoàn thành"}
-					</Text>
+					{isSubmitting ? (
+						<ActivityIndicator color="#FFFFFF" />
+					) : (
+						<Text style={styles.submitButtonText}>Hoàn thành</Text>
+					)}
 				</Pressable>
 			</View>
 
@@ -363,10 +424,7 @@ export default function NewOrderScreen() {
 					<View style={styles.modalCard}>
 						<Text style={styles.modalTitle}>Chọn ảnh phế liệu</Text>
 
-						<Pressable
-							style={styles.modalAction}
-							onPress={handleTakePhoto}
-						>
+						<Pressable style={styles.modalAction} onPress={handleTakePhoto}>
 							<Ionicons name="camera-outline" size={22} color="#22C55E" />
 							<Text style={styles.modalActionText}>Chụp ảnh</Text>
 						</Pressable>
@@ -384,6 +442,58 @@ export default function NewOrderScreen() {
 				</Pressable>
 			</Modal>
 		</SafeAreaView>
+	);
+}
+
+function CategoryQuantityField({
+	category,
+	price,
+	value,
+	onChangeText,
+	onIncrement,
+	onDecrement,
+}: {
+	category: ScrapCategory;
+	price: ScrapPrice | null;
+	value: string;
+	onChangeText: (value: string) => void;
+	onIncrement: () => void;
+	onDecrement: () => void;
+}) {
+	return (
+		<View>
+			<Text style={styles.fieldLabel}>
+				{category.name} <Text style={styles.required}>*</Text>
+			</Text>
+			<Text style={styles.fieldHelper}>
+				{price
+					? `${formatVndAmount(price.price_min)}${
+							price.price_max
+								? ` ~ ${formatVndAmount(price.price_max)}`
+								: ""
+						} ${price.currency}/${category.unit}`
+					: "Chưa có giá đang kích hoạt"}
+			</Text>
+
+			<View style={styles.quantityInputWrap}>
+				<TextInput
+					value={value}
+					onChangeText={onChangeText}
+					keyboardType="decimal-pad"
+					placeholder="0"
+					style={styles.quantityInput}
+				/>
+
+				<View style={styles.stepperWrap}>
+					<Pressable onPress={onIncrement}>
+						<Ionicons name="chevron-up" size={18} color="#1E1E1E" />
+					</Pressable>
+					<Pressable onPress={onDecrement}>
+						<Ionicons name="chevron-down" size={18} color="#1E1E1E" />
+					</Pressable>
+				</View>
+			</View>
+		</View>
 	);
 }
 
@@ -443,13 +553,11 @@ function CalendarCard(props: {
 			</View>
 
 			<View style={styles.weekHeaderRow}>
-				{["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map(
-					(day) => (
-						<Text key={day} style={styles.weekHeaderText}>
-							{day}
-						</Text>
-					)
-				)}
+				{["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day) => (
+					<Text key={day} style={styles.weekHeaderText}>
+						{day}
+					</Text>
+				))}
 			</View>
 
 			<View style={styles.calendarGrid}>
@@ -492,6 +600,29 @@ function CalendarCard(props: {
 			</View>
 		</View>
 	);
+}
+
+function buildLatestPriceMap(prices: ScrapPrice[]) {
+	const map = new Map<string, ScrapPrice>();
+
+	for (const price of prices) {
+		if (!map.has(price.scrap_category_id)) {
+			map.set(price.scrap_category_id, price);
+		}
+	}
+
+	return map;
+}
+
+function formatAddress(address: Address) {
+	return [
+		address.address_line,
+		address.ward,
+		address.district,
+		address.city,
+	]
+		.filter(Boolean)
+		.join(", ");
 }
 
 function buildCalendarDays(month: Date): Array<Date | null> {
@@ -599,6 +730,10 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		fontWeight: "800",
 		color: "#1E1E1E",
+	},
+	loadingBox: {
+		paddingVertical: 40,
+		alignItems: "center",
 	},
 	fieldList: {
 		gap: 14,

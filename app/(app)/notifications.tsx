@@ -36,7 +36,10 @@ export default function NotificationsScreen() {
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<View style={styles.header}>
-				<Pressable style={styles.backButton} onPress={() => router.back()}>
+				<Pressable
+					style={styles.backButton}
+					onPress={() => router.replace("/user-info")}
+				>
 					<Ionicons name="arrow-back" size={20} color="#1E1E1E" />
 				</Pressable>
 				<Text style={styles.headerTitle}>Thông báo</Text>

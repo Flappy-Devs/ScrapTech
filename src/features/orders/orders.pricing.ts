@@ -1,6 +1,7 @@
 import type {
 	CreatePickupOrderItemInput,
 	ScrapCategory,
+	ScrapPrice,
 } from "@/src/types/app.types";
 
 export interface MockScrapPrice {
@@ -79,6 +80,30 @@ export function buildPricedOrderItem(params: {
 			unit: params.category.unit,
 		},
 		estimated_subtotal: estimatedSubtotalMin,
+	};
+}
+
+export function buildPricedOrderItemFromPrice(params: {
+	category: ScrapCategory;
+	price: ScrapPrice | null;
+	quantity: number;
+}): CreatePickupOrderItemInput | null {
+	if (!params.price || params.quantity <= 0) {
+		return null;
+	}
+
+	return {
+		scrap_category_id: params.category.id,
+		estimated_quantity: params.quantity,
+		unit: params.category.unit,
+		price_snapshot: {
+			category_name: params.category.name,
+			price_min: params.price.price_min,
+			price_max: params.price.price_max,
+			currency: params.price.currency,
+			unit: params.category.unit,
+		},
+		estimated_subtotal: params.price.price_min * params.quantity,
 	};
 }
 
