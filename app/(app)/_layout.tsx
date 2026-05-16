@@ -82,6 +82,22 @@ export default function AppLayout() {
 			/>
 
 			<Tabs.Screen
+				name="market-price"
+				options={{
+					headerShown: false,
+					href: null,
+				}}
+			/>
+
+			<Tabs.Screen
+				name="price-estimator"
+				options={{
+					headerShown: false,
+					href: null,
+				}}
+			/>
+
+			<Tabs.Screen
 				name="orders"
 				options={{
 					href: null,

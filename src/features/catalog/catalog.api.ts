@@ -20,7 +20,6 @@ export async function getActiveScrapPrices(
 	let query = supabase
 		.from("scrap_prices")
 		.select("*")
-		.eq("is_active", true)
 		.order("effective_from", { ascending: false });
 
 	if (areaCode) {

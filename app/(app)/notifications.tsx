@@ -1,201 +1,284 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
-import { useState } from "react";
 import {
+	ActivityIndicator,
 	Pressable,
 	ScrollView,
 	StyleSheet,
-	Switch,
 	Text,
 	View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+	useMarkAllNotificationsAsRead,
+	useMarkNotificationAsRead,
+	useMyNotifications,
+} from "@/src/features/notifications/notifications.hooks";
+import type { Notification } from "@/src/types/app.types";
+
 export default function NotificationsScreen() {
-	const [pushEnabled, setPushEnabled] = useState(true);
-	const [orderUpdates, setOrderUpdates] = useState(true);
-	const [reminderEnabled, setReminderEnabled] = useState(false);
-	const [soundEnabled, setSoundEnabled] = useState(true);
+	const { data: notifications = [], isLoading } = useMyNotifications();
+	const markAsRead = useMarkNotificationAsRead();
+	const markAllAsRead = useMarkAllNotificationsAsRead();
+	const hasUnread = notifications.some((notification) => !notification.is_read);
+
+	async function handlePressNotification(notification: Notification) {
+		if (!notification.is_read) {
+			await markAsRead.mutateAsync(notification.id);
+		}
+
+		if (notification.order_id) {
+			router.push(`/orders/${notification.order_id}`);
+		}
+	}
 
 	return (
 		<SafeAreaView style={styles.safeArea}>
+			<View style={styles.header}>
+				<Pressable style={styles.backButton} onPress={() => router.back()}>
+					<Ionicons name="arrow-back" size={20} color="#1E1E1E" />
+				</Pressable>
+				<Text style={styles.headerTitle}>Thông báo</Text>
+				<Pressable
+					style={styles.markAllButton}
+					onPress={() => markAllAsRead.mutate()}
+					disabled={!hasUnread || markAllAsRead.isPending}
+				>
+					<Ionicons
+						name="checkmark-done-outline"
+						size={20}
+						color={hasUnread ? "#22C55E" : "#C5C6CC"}
+					/>
+				</Pressable>
+			</View>
+
 			<ScrollView
 				contentContainerStyle={styles.content}
 				showsVerticalScrollIndicator={false}
 			>
-				<ScreenHeader title="Thông báo và âm thanh" />
-
-				<Text style={styles.sectionTitle}>Thông báo</Text>
-				<View style={styles.card}>
-					<ToggleRow
-						icon="notifications-outline"
-						label="Thông báo đẩy"
-						description="Nhận thông báo từ ứng dụng"
-						value={pushEnabled}
-						onValueChange={setPushEnabled}
-					/>
-					<Divider />
-					<ToggleRow
-						icon="receipt-outline"
-						label="Cập nhật đơn hàng"
-						description="Nhận trạng thái mới nhất của đơn thu gom"
-						value={orderUpdates}
-						onValueChange={setOrderUpdates}
-					/>
-					<Divider />
-					<ToggleRow
-						icon="alarm-outline"
-						label="Nhắc lịch thu gom"
-						description="Nhắc trước khi đơn hàng đến lịch xử lý"
-						value={reminderEnabled}
-						onValueChange={setReminderEnabled}
-					/>
-				</View>
-
-				<Text style={styles.sectionTitle}>Âm thanh</Text>
-				<View style={styles.card}>
-					<ToggleRow
-						icon="volume-high-outline"
-						label="Âm thanh và rung"
-						description="Phát âm báo khi có thông báo mới"
-						value={soundEnabled}
-						onValueChange={setSoundEnabled}
-					/>
-				</View>
+				{isLoading ? (
+					<View style={styles.stateBox}>
+						<ActivityIndicator size="large" color="#22C55E" />
+					</View>
+				) : notifications.length === 0 ? (
+					<View style={styles.stateBox}>
+						<Ionicons name="notifications-outline" size={42} color="#8F9098" />
+						<Text style={styles.stateTitle}>Chưa có thông báo</Text>
+					</View>
+				) : (
+					<View style={styles.list}>
+						{notifications.map((notification) => (
+							<NotificationRow
+								key={notification.id}
+								notification={notification}
+								onPress={() => handlePressNotification(notification)}
+							/>
+						))}
+					</View>
+				)}
 			</ScrollView>
 		</SafeAreaView>
 	);
 }
 
-function ScreenHeader({ title }: { title: string }) {
-	return (
-		<View style={styles.header}>
-			<Pressable style={styles.backButton} onPress={() => router.back()}>
-				<Ionicons name="chevron-back" size={20} color="#1E1E1E" />
-			</Pressable>
-
-			<Text style={styles.headerTitle}>{title}</Text>
-
-			<View style={styles.headerSpacer} />
-		</View>
-	);
-}
-
-function ToggleRow(props: {
-	icon: keyof typeof Ionicons.glyphMap;
-	label: string;
-	description: string;
-	value: boolean;
-	onValueChange: (value: boolean) => void;
+function NotificationRow({
+	notification,
+	onPress,
+}: {
+	notification: Notification;
+	onPress: () => void;
 }) {
+	const presentation = getNotificationPresentation(notification);
+
 	return (
-		<View style={styles.row}>
-			<View style={styles.rowIcon}>
-				<Ionicons name={props.icon} size={20} color="#C4D600" />
+		<Pressable style={styles.notificationRow} onPress={onPress}>
+			<View style={[styles.iconWrap, { backgroundColor: presentation.bg }]}>
+				<Ionicons name={presentation.icon} size={18} color={presentation.fg} />
 			</View>
 
-			<View style={styles.rowContent}>
-				<Text style={styles.rowLabel}>{props.label}</Text>
-				<Text style={styles.rowDescription}>{props.description}</Text>
-			</View>
+			<View style={styles.notificationContent}>
+				<View style={styles.titleRow}>
+					<Text style={styles.notificationTitle} numberOfLines={1}>
+						{notification.title}
+					</Text>
+					{!notification.is_read ? <View style={styles.unreadDot} /> : null}
+					<Text style={styles.timeText}>
+						{formatRelativeTime(notification.created_at)}
+					</Text>
+				</View>
 
-			<Switch
-				value={props.value}
-				onValueChange={props.onValueChange}
-				trackColor={{ false: "#E8E9F1", true: "#EEF58A" }}
-				thumbColor={props.value ? "#C4D600" : "#FFFFFF"}
-			/>
-		</View>
+				<Text style={styles.notificationBody} numberOfLines={2}>
+					{notification.body || "Bạn có cập nhật mới."}
+				</Text>
+			</View>
+		</Pressable>
 	);
 }
 
-function Divider() {
-	return <View style={styles.divider} />;
+function getNotificationPresentation(notification: Notification): {
+	icon: keyof typeof Ionicons.glyphMap;
+	bg: string;
+	fg: string;
+} {
+	switch (notification.type) {
+		case "order_confirmed":
+			return {
+				icon: "checkmark-circle-outline",
+				bg: "#DCFCE7",
+				fg: "#22C55E",
+			};
+		case "order_rejected":
+			return {
+				icon: "close-circle-outline",
+				bg: "#FEE2E2",
+				fg: "#EF4444",
+			};
+		case "price_updated":
+			return {
+				icon: "trending-up-outline",
+				bg: "#DBEAFE",
+				fg: "#3B82F6",
+			};
+		case "order_status_updated":
+			return {
+				icon: "alert-outline",
+				bg: "#FEF3C7",
+				fg: "#F59E0B",
+			};
+		default:
+			return {
+				icon: "notifications-outline",
+				bg: "#F3F4F6",
+				fg: "#71727A",
+			};
+	}
+}
+
+function formatRelativeTime(value: string) {
+	const diffMs = Date.now() - new Date(value).getTime();
+	const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
+
+	if (diffMinutes < 1) return "vừa xong";
+	if (diffMinutes < 60) return `${diffMinutes} phút trước`;
+
+	const diffHours = Math.floor(diffMinutes / 60);
+
+	if (diffHours < 24) return `${diffHours} giờ trước`;
+
+	const diffDays = Math.floor(diffHours / 24);
+
+	if (diffDays < 7) return `${diffDays} ngày trước`;
+
+	return new Intl.DateTimeFormat("vi-VN", {
+		day: "2-digit",
+		month: "2-digit",
+		year: "numeric",
+	}).format(new Date(value));
 }
 
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: "#FFFFFF",
-	},
-	content: {
-		paddingHorizontal: 20,
-		paddingTop: 10,
-		paddingBottom: 40,
+		backgroundColor: "#F5F5F5",
 	},
 	header: {
+		height: 86,
+		paddingHorizontal: 18,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-between",
-		marginBottom: 24,
+		borderBottomLeftRadius: 18,
+		borderBottomRightRadius: 18,
+		backgroundColor: "#FFFFFF",
+		shadowColor: "#000",
+		shadowOpacity: 0.05,
+		shadowOffset: { width: 0, height: 6 },
+		shadowRadius: 12,
+		elevation: 3,
 	},
 	backButton: {
 		width: 38,
 		height: 38,
-		borderRadius: 19,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#FFFFFF",
-	},
-	headerSpacer: {
-		width: 38,
 	},
 	headerTitle: {
-		fontSize: 17,
-		fontWeight: "800",
+		fontSize: 18,
+		fontWeight: "900",
 		color: "#1E1E1E",
 	},
-	sectionTitle: {
-		fontSize: 14,
-		fontWeight: "800",
-		color: "#1E1E1E",
-		marginBottom: 10,
-		marginTop: 8,
-	},
-	card: {
-		borderRadius: 18,
-		backgroundColor: "#FFFFFF",
-		overflow: "hidden",
-		marginBottom: 22,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowOffset: { width: 0, height: 6 },
-		shadowRadius: 14,
-		elevation: 3,
-	},
-	row: {
-		minHeight: 78,
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 16,
-	},
-	rowIcon: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
+	markAllButton: {
+		width: 38,
+		height: 38,
 		alignItems: "center",
 		justifyContent: "center",
-		backgroundColor: "#FBFDEB",
-		marginRight: 14,
 	},
-	rowContent: {
-		flex: 1,
-		paddingRight: 10,
+	content: {
+		paddingTop: 10,
+		paddingBottom: 116,
 	},
-	rowLabel: {
-		fontSize: 13,
+	stateBox: {
+		minHeight: 260,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	stateTitle: {
+		marginTop: 10,
+		fontSize: 14,
 		fontWeight: "800",
-		color: "#1E1E1E",
-	},
-	rowDescription: {
-		marginTop: 3,
-		fontSize: 11,
-		lineHeight: 15,
 		color: "#71727A",
 	},
-	divider: {
-		height: 1,
-		marginLeft: 66,
-		backgroundColor: "#F0F0F0",
+	list: {
+		backgroundColor: "#FFFFFF",
+	},
+	notificationRow: {
+		minHeight: 78,
+		paddingHorizontal: 18,
+		paddingVertical: 12,
+		flexDirection: "row",
+		alignItems: "flex-start",
+		borderBottomWidth: 1,
+		borderBottomColor: "#F0F0F0",
+		backgroundColor: "#FFFFFF",
+	},
+	iconWrap: {
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		alignItems: "center",
+		justifyContent: "center",
+		marginRight: 12,
+	},
+	notificationContent: {
+		flex: 1,
+	},
+	titleRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 7,
+	},
+	notificationTitle: {
+		flex: 1,
+		fontSize: 13,
+		fontWeight: "900",
+		color: "#1E1E1E",
+	},
+	unreadDot: {
+		width: 7,
+		height: 7,
+		borderRadius: 4,
+		backgroundColor: "#EF4444",
+	},
+	timeText: {
+		fontSize: 10,
+		fontWeight: "700",
+		color: "#C5C6CC",
+	},
+	notificationBody: {
+		marginTop: 4,
+		fontSize: 11,
+		lineHeight: 15,
+		color: "#494A50",
 	},
 });

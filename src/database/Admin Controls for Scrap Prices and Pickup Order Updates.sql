@@ -2,6 +2,7 @@
 -- ADMIN WRITE POLICIES FOR SCRAP PRICES
 -- =========================================================
 
+drop policy if exists "Admins can create scrap prices" on public.scrap_prices;
 create policy "Admins can create scrap prices"
 on public.scrap_prices
 for insert
@@ -14,6 +15,7 @@ with check (
   )
 );
 
+drop policy if exists "Admins can update scrap prices" on public.scrap_prices;
 create policy "Admins can update scrap prices"
 on public.scrap_prices
 for update
@@ -34,10 +36,29 @@ with check (
   )
 );
 
+drop policy if exists "Admins can delete scrap prices" on public.scrap_prices;
 create policy "Admins can delete scrap prices"
 on public.scrap_prices
 for delete
 using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.role = 'admin'
+  )
+);
+
+
+-- =========================================================
+-- ADMIN WRITE POLICIES FOR NOTIFICATIONS
+-- =========================================================
+
+drop policy if exists "Admins can create notifications" on public.notifications;
+create policy "Admins can create notifications"
+on public.notifications
+for insert
+with check (
   exists (
     select 1
     from public.profiles p
@@ -67,8 +88,15 @@ security invoker
 as $$
 declare
   v_old_status public.order_status;
+  v_old_scheduled_date date;
+  v_old_scheduled_time_from time;
+  v_old_scheduled_time_to time;
+  v_seller_id uuid;
   v_item jsonb;
   v_final_total numeric(12, 2);
+  v_notification_type public.notification_type;
+  v_notification_title text;
+  v_notification_body text;
 begin
   if not exists (
     select 1
@@ -79,8 +107,18 @@ begin
     raise exception 'Only admins can update pickup orders.';
   end if;
 
-  select po.status
-  into v_old_status
+  select
+    po.status,
+    po.scheduled_date,
+    po.scheduled_time_from,
+    po.scheduled_time_to,
+    po.seller_id
+  into
+    v_old_status,
+    v_old_scheduled_date,
+    v_old_scheduled_time_from,
+    v_old_scheduled_time_to,
+    v_seller_id
   from public.pickup_orders po
   where po.id = p_order_id
   for update;
@@ -180,6 +218,67 @@ begin
       p_admin_note
     );
   end if;
+
+  v_notification_type = case
+    when p_status = 'confirmed'
+      and p_status is distinct from v_old_status
+      then 'order_confirmed'::public.notification_type
+    when p_status = 'rejected'
+      and p_status is distinct from v_old_status
+      then 'order_rejected'::public.notification_type
+    else 'order_status_updated'::public.notification_type
+  end;
+
+  v_notification_title = case
+    when p_status = 'confirmed'
+      and p_status is distinct from v_old_status
+      then 'Đơn hàng đã được xác nhận'
+    when p_status = 'rejected'
+      and p_status is distinct from v_old_status
+      then 'Đơn hàng bị từ chối'
+    when p_status = 'on_the_way'
+      and p_status is distinct from v_old_status
+      then 'Người thu gom sắp tới'
+    when p_status = 'completed'
+      and p_status is distinct from v_old_status
+      then 'Giao dịch thành công'
+    when p_scheduled_date is distinct from v_old_scheduled_date
+      or p_scheduled_time_from is distinct from v_old_scheduled_time_from
+      or p_scheduled_time_to is distinct from v_old_scheduled_time_to
+      then 'Lịch thu gom đã được cập nhật'
+    else 'Cập nhật đơn hàng'
+  end;
+
+  v_notification_body = concat(
+    'Đơn #',
+    left(p_order_id::text, 8),
+    ' đã được cập nhật. Trạng thái: ',
+    case p_status
+      when 'pending' then 'chờ xác nhận'
+      when 'confirmed' then 'đã xác nhận'
+      when 'rejected' then 'từ chối'
+      when 'on_the_way' then 'đang tới'
+      when 'completed' then 'hoàn thành'
+      when 'cancelled' then 'đã hủy'
+      else p_status::text
+    end,
+    '.'
+  );
+
+  insert into public.notifications (
+    user_id,
+    order_id,
+    type,
+    title,
+    body
+  )
+  values (
+    v_seller_id,
+    p_order_id,
+    v_notification_type,
+    v_notification_title,
+    v_notification_body
+  );
 
   return p_order_id;
 end;

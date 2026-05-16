@@ -10,22 +10,23 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useMyNotifications } from "@/src/features/notifications/notifications.hooks";
 import { useMyPickupOrders } from "@/src/features/orders/orders.hooks";
-import {
-	formatVndAmount,
-} from "@/src/features/orders/orders.pricing";
-import type { AddressSnapshot, PickupOrder } from "@/src/types/app.types";
+import { formatVndAmount } from "@/src/features/orders/orders.pricing";
 import { useMyProfile } from "@/src/features/profile/profile.hooks";
+import type { AddressSnapshot, PickupOrder } from "@/src/types/app.types";
 
 const ACTIVE_STATUSES = ["pending", "confirmed", "on_the_way"] as const;
 
 export default function MyOrdersScreen() {
 	const { data: orders = [], isLoading } = useMyPickupOrders();
-
 	const { data: profile, isLoading: isProfileLoading } = useMyProfile();
+	const { data: notifications = [] } = useMyNotifications();
 
 	const displayName = profile?.full_name?.trim() || "Người dùng ScrapTech";
-
+	const hasUnreadNotification = notifications.some(
+		(notification) => !notification.is_read
+	);
 	const activeOrders = orders.filter((order) =>
 		ACTIVE_STATUSES.includes(
 			order.status as (typeof ACTIVE_STATUSES)[number]
@@ -47,32 +48,41 @@ export default function MyOrdersScreen() {
 						<View style={styles.welcomeTextWrap}>
 							<Text style={styles.welcomeCaption}>Welcome back,</Text>
 							<Text style={styles.welcomeTitle}>
-								{`Xin chào, ${isProfileLoading ? "Đang tải..." : displayName}!`}
+								{`Xin chào, ${
+									isProfileLoading ? "Đang tải..." : displayName
+								}!`}
 							</Text>
 						</View>
 
-						<View style={styles.bellButton}>
+						<Pressable
+							style={styles.bellButton}
+							onPress={() => router.push("/(app)/notifications")}
+						>
 							<Ionicons
 								name="notifications-outline"
 								size={22}
 								color="#1E1E1E"
 							/>
-							<View style={styles.bellDot} />
-						</View>
+							{hasUnreadNotification ? <View style={styles.bellDot} /> : null}
+						</Pressable>
 					</View>
 
 					<View style={styles.quickActionRow}>
-						<View style={[styles.quickActionCard, styles.greenAction]}>
+						<Pressable
+							style={[styles.quickActionCard, styles.greenAction]}
+							onPress={() => router.push("./market-price")}
+						>
 							<View style={styles.quickIconGreen}>
 								<Ionicons name="trending-up" size={18} color="#16A34A" />
 							</View>
 							<Text style={styles.quickTitle}>Bảng giá</Text>
-							<Text style={styles.quickCaption}>
-								Giá phế liệu trực tiếp
-							</Text>
-						</View>
+							<Text style={styles.quickCaption}>Giá phế liệu trực tiếp</Text>
+						</Pressable>
 
-						<View style={[styles.quickActionCard, styles.blueAction]}>
+						<Pressable
+							style={[styles.quickActionCard, styles.blueAction]}
+							onPress={() => router.push("./price-estimator")}
+						>
 							<View style={styles.quickIconBlue}>
 								<Ionicons
 									name="calculator-outline"
@@ -84,7 +94,7 @@ export default function MyOrdersScreen() {
 							<Text style={styles.quickCaption}>
 								Ước lượng giá trị phế liệu
 							</Text>
-						</View>
+						</Pressable>
 					</View>
 				</View>
 
@@ -127,7 +137,6 @@ export default function MyOrdersScreen() {
 }
 
 function OrderCard({ order }: { order: PickupOrder }) {
-	
 	const addressSnapshot = order.address_snapshot as unknown as AddressSnapshot;
 	const address =
 		addressSnapshot?.address_line?.trim() || "Chưa có địa chỉ thu gom";
@@ -200,13 +209,11 @@ function formatSchedule(order: PickupOrder) {
 }
 
 function formatDate(value: string) {
-	const date = new Date(`${value}T00:00:00`);
-
 	return new Intl.DateTimeFormat("vi-VN", {
 		day: "2-digit",
 		month: "2-digit",
 		year: "numeric",
-	}).format(date);
+	}).format(new Date(`${value}T00:00:00`));
 }
 
 const styles = StyleSheet.create({
