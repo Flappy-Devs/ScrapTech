@@ -2,6 +2,15 @@ import { supabase } from "@/src/lib/supabase";
 
 export type PhoneAuthFlow = "login" | "signup";
 
+export async function loginWithEmail(email: string, password: string): Promise<void> {
+	const { error } = await supabase.auth.signInWithPassword({
+		email,
+		password
+	})
+
+	if (error) throw error;
+}
+
 export function normalizePhoneNumber(rawPhone: string): string {
 	const cleaned = rawPhone.replace(/[^\d+]/g, "");
 

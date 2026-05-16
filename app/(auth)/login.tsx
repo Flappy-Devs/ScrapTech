@@ -22,7 +22,7 @@ import { useThemeColors } from "@/src/hooks/useThemeColors";
 
 export default function LoginScreen() {
 	const colors = useThemeColors();
-	const { sendLoginOtp, confirmPhoneOtp } = useAuth();
+	const { sendLoginOtp, confirmPhoneOtp, loginAdmin } = useAuth();
 
 	const [phone, setPhone] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,10 +64,24 @@ export default function LoginScreen() {
 		}
 	}
 
-	async function handleDevLogin() {
+	async function handleSellerDevLogin() {
 		try {
 			await sendLoginOtp("+18005550123");
 			await confirmPhoneOtp("+18005550123", "789012");
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Không thể xác thực OTP. Vui lòng thử lại.";
+
+			Alert.alert("Xác thực thất bại", message);
+		} finally {
+		}
+	}
+	
+	async function handleAdminDevLogin() {
+		try {
+			await loginAdmin("vy.tranngoclam@gmail.com", "lamvytran2357");
 		} catch (error) {
 			const message =
 				error instanceof Error
@@ -170,12 +184,25 @@ export default function LoginScreen() {
 								styles.button,
 								{ backgroundColor: colors.highlight.medium, marginTop: 16 },
 							]}
-							onPress={handleDevLogin}
+							onPress={handleSellerDevLogin}
 						>
 							{isSubmitting ? (
 								<ActivityIndicator color="#fff" />
 							) : (
-								<Text style={styles.buttonText}>{"Đăng nhập Nhanh (Cho dev)"}</Text>
+								<Text style={styles.buttonText}>{"Đăng nhập Nhanh Seller (Cho dev)"}</Text>
+							)}
+						</Pressable>
+						<Pressable
+							style={[
+								styles.button,
+								{ backgroundColor: colors.highlight.medium, marginTop: 16 },
+							]}
+							onPress={handleAdminDevLogin}
+						>
+							{isSubmitting ? (
+								<ActivityIndicator color="#fff" />
+							) : (
+								<Text style={styles.buttonText}>{"Đăng nhập Nhanh Admin (Cho dev)"}</Text>
 							)}
 						</Pressable>
 					</View>

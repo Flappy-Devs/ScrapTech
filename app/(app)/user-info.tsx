@@ -80,7 +80,6 @@ export default function UserInfoScreen() {
 						try {
 							setIsSigningOut(true);
 							await signOut();
-							router.replace("/(auth)/login");
 						} catch (error) {
 							const message =
 								error instanceof Error

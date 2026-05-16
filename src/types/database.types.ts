@@ -757,6 +757,19 @@ export type Database = {
             }
             Returns: string
           }
+      admin_update_pickup_order: {
+        Args: {
+          p_admin_note: string
+          p_items: Json
+          p_order_id: string
+          p_rejection_reason: string
+          p_scheduled_date: string
+          p_scheduled_time_from: string
+          p_scheduled_time_to: string
+          p_status: Database["public"]["Enums"]["order_status"]
+        }
+        Returns: string
+      }
       create_pickup_order:
         | {
             Args: {

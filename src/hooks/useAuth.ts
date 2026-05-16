@@ -3,6 +3,7 @@ import { AppState } from "react-native";
 
 import {
 	getCurrentSession,
+	loginWithEmail,
 	requestLoginOtp,
 	requestSignupOtp,
 	signOutCurrentUser,
@@ -10,6 +11,7 @@ import {
 } from "@/src/features/auth/auth.api";
 import { supabase } from "@/src/lib/supabase";
 import { useAuthStore } from "@/src/store/useAuthStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useAuthBootstrap() {
 	const { setSession, clearSession, setLoading } = useAuthStore();
@@ -71,6 +73,7 @@ export function useAuthBootstrap() {
 
 export function useAuth() {
 	const authState = useAuthStore();
+	const queryClient = useQueryClient();
 
 	const sendLoginOtp = useCallback(async (phone: string) => {
 		await requestLoginOtp(phone);
@@ -87,8 +90,13 @@ export function useAuth() {
 		[]
 	);
 
+	const loginAdmin = useCallback(async (email: string, password: string) => {
+		await loginWithEmail(email, password);
+	}, [])
+
 	const signOut = useCallback(async () => {
 		await signOutCurrentUser();
+		queryClient.clear();
 		useAuthStore.getState().clearSession();
 	}, []);
 
@@ -98,5 +106,6 @@ export function useAuth() {
 		sendSignupOtp,
 		confirmPhoneOtp,
 		signOut,
+		loginAdmin,
 	};
 }

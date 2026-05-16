@@ -4,11 +4,13 @@ import "@/src/i18n/config";
 import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import type { Session } from "@supabase/supabase-js";
 
 import { useAuthBootstrap } from "@/src/hooks/useAuth";
 import { useAuthStore } from "@/src/store/useAuthStore";
 import { useOnboardingStore } from "@/src/store/useOnboardingStore";
 import { AppQueryProvider } from "@/src/providers/query-provider";
+import { useMyProfile } from "@/src/features/profile/profile.hooks";
 
 export default function RootLayout() {
 	useAuthBootstrap();
@@ -34,25 +36,73 @@ export default function RootLayout() {
 
 	return (
 		<AppQueryProvider>
-			<Stack screenOptions={{ headerShown: false }}>
-				<Stack.Protected guard={!hasCompletedOnboarding}>
-					<Stack.Screen name="onboarding" />
-				</Stack.Protected>
-
-				<Stack.Protected
-					guard={hasCompletedOnboarding && !session}
-				>
-					<Stack.Screen name="(auth)" />
-				</Stack.Protected>
-
-				<Stack.Protected
-					guard={hasCompletedOnboarding && Boolean(session)}
-				>
-					<Stack.Screen name="(app)" />
-				</Stack.Protected>
-			</Stack>
+			<RootNavigator
+				session={session}
+				hasCompletedOnboarding={hasCompletedOnboarding}
+			/>
 
 			<StatusBar style="auto" />
 		</AppQueryProvider>
+	);
+}
+
+function RootNavigator({
+	session,
+	hasCompletedOnboarding,
+}: {
+	session: Session | null;
+	hasCompletedOnboarding: boolean;
+}) {
+	const shouldLoadProfile =
+		hasCompletedOnboarding && Boolean(session);
+
+	const {
+		data: profile,
+		isLoading: isProfileLoading,
+		isFetching: isProfileFetching,
+	} = useMyProfile(shouldLoadProfile);
+
+	if (
+		shouldLoadProfile &&
+		(isProfileLoading || isProfileFetching)
+	) {
+		return null;
+	}
+
+	const isSeller = profile?.role === "seller";
+	const isAdmin = profile?.role === "admin";
+
+	return (
+		<Stack screenOptions={{ headerShown: false }}>
+			<Stack.Protected guard={!hasCompletedOnboarding}>
+				<Stack.Screen name="onboarding" />
+			</Stack.Protected>
+
+			<Stack.Protected
+				guard={hasCompletedOnboarding && !session}
+			>
+				<Stack.Screen name="(auth)" />
+			</Stack.Protected>
+
+			<Stack.Protected
+				guard={
+					hasCompletedOnboarding &&
+					Boolean(session) &&
+					isSeller
+				}
+			>
+				<Stack.Screen name="(app)" />
+			</Stack.Protected>
+
+			<Stack.Protected
+				guard={
+					hasCompletedOnboarding &&
+					Boolean(session) &&
+					isAdmin
+				}
+			>
+				<Stack.Screen name="(admin)" />
+			</Stack.Protected>
+		</Stack>
 	);
 }

@@ -185,7 +185,8 @@ function OrderProgress({
 								<Text
 									style={[
 										styles.progressNumber,
-										(isDone || isCurrent) && styles.progressNumberActive,
+										(isCurrent) && styles.progressNumberActive,
+										(isDone) && styles.progressNumberDone,
 									]}
 								>
 									{stepNumber}
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
 		zIndex: 1,
 	},
 	progressCircleDone: {
-		backgroundColor: "#22C55E",
+		backgroundColor: "#22C55f",
 	},
 	progressCircleCurrent: {
 		borderWidth: 2,
@@ -304,6 +305,9 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		fontWeight: "800",
 		color: "#71727A",
+	},
+	progressNumberDone: {
+		color: "#ffffff"
 	},
 	progressNumberActive: {
 		color: "#3B82F6",
