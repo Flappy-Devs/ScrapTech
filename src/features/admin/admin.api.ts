@@ -37,7 +37,6 @@ export interface CreateAdminScrapPriceInput {
 	priceMin: number;
 	priceMax: number | null;
 	currency: string;
-	isActive: boolean;
 }
 
 export interface UpdateAdminScrapPriceInput
@@ -142,7 +141,7 @@ export async function getAdminScrapPriceCatalog(): Promise<
 		supabase
 			.from("scrap_prices")
 			.select("*")
-			.order("effective_from", { ascending: false }),
+			.order("created_at", { ascending: false }),
 	]);
 
 	throwIfSupabaseError(categoryError);
@@ -178,6 +177,14 @@ export async function createAdminScrapPrice(
 		throw new Error("User is not authenticated.");
 	}
 
+	const { error: deactivateError } = await supabase
+		.from("scrap_prices")
+		.update({ is_active: false })
+		.eq("scrap_category_id", input.scrapCategoryId)
+		.eq("is_active", true);
+
+	throwIfSupabaseError(deactivateError);
+
 	const { data, error } = await supabase
 		.from("scrap_prices")
 		.insert({
@@ -186,7 +193,7 @@ export async function createAdminScrapPrice(
 			price_min: input.priceMin,
 			price_max: input.priceMax,
 			currency: input.currency,
-			is_active: input.isActive,
+			is_active: true,
 			created_by: user.id,
 		})
 		.select("*")
@@ -208,7 +215,6 @@ export async function updateAdminScrapPrice(
 			price_min: input.priceMin,
 			price_max: input.priceMax,
 			currency: input.currency,
-			is_active: input.isActive,
 		})
 		.eq("id", input.id)
 		.select("*")

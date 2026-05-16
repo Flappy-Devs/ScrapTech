@@ -1,5 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	ActivityIndicator,
 	Alert,
@@ -7,7 +7,6 @@ import {
 	Pressable,
 	ScrollView,
 	StyleSheet,
-	Switch,
 	Text,
 	TextInput,
 	View,
@@ -20,6 +19,7 @@ import {
 	useDeleteAdminScrapPrice,
 	useUpdateAdminScrapPrice,
 } from "@/src/features/admin/admin.hooks";
+import type { AdminScrapPriceCategoryRow } from "@/src/features/admin/admin.api";
 import { formatVndAmount } from "@/src/features/orders/orders.pricing";
 import type { ScrapPrice } from "@/src/types/app.types";
 
@@ -31,22 +31,31 @@ interface PriceEditorState {
 	priceMin: string;
 	priceMax: string;
 	currency: string;
-	isActive: boolean;
 }
 
 export default function AdminPricesScreen() {
-	const { data: rows = [], isLoading } =
-		useAdminScrapPriceCatalog();
-
+	const { data: rows = [], isLoading } = useAdminScrapPriceCatalog();
 	const createPrice = useCreateAdminScrapPrice();
 	const updatePrice = useUpdateAdminScrapPrice();
 	const deletePrice = useDeleteAdminScrapPrice();
 
-	const [editor, setEditor] =
-		useState<PriceEditorState | null>(null);
+	const [editor, setEditor] = useState<PriceEditorState | null>(null);
+	const [selectedCategory, setSelectedCategory] =
+		useState<AdminScrapPriceCategoryRow | null>(null);
 
-	const isSaving =
-		createPrice.isPending || updatePrice.isPending;
+	const isSaving = createPrice.isPending || updatePrice.isPending;
+
+	useEffect(() => {
+		if (!selectedCategory) return;
+
+		const freshCategory = rows.find(
+			(row) => row.category.id === selectedCategory.category.id
+		);
+
+		if (freshCategory) {
+			setSelectedCategory(freshCategory);
+		}
+	}, [rows, selectedCategory]);
 
 	async function handleSavePrice() {
 		if (!editor) return;
@@ -55,17 +64,14 @@ export default function AdminPricesScreen() {
 		const priceMax = parseNullableNumber(editor.priceMax);
 
 		if (priceMin === null) {
-			Alert.alert(
-				"Thiếu giá tối thiểu",
-				"Vui lòng nhập price_min hợp lệ."
-			);
+			Alert.alert("Thiếu giá tối thiểu", "Vui lòng nhập giá hợp lệ.");
 			return;
 		}
 
 		if (priceMax !== null && priceMax < priceMin) {
 			Alert.alert(
 				"Khoảng giá không hợp lệ",
-				"price_max phải lớn hơn hoặc bằng price_min."
+				"Giá cao nhất phải lớn hơn hoặc bằng giá thấp nhất."
 			);
 			return;
 		}
@@ -78,7 +84,6 @@ export default function AdminPricesScreen() {
 					priceMin,
 					priceMax,
 					currency: editor.currency.trim() || "VND",
-					isActive: editor.isActive,
 				});
 			} else {
 				await updatePrice.mutateAsync({
@@ -88,16 +93,13 @@ export default function AdminPricesScreen() {
 					priceMin,
 					priceMax,
 					currency: editor.currency.trim() || "VND",
-					isActive: editor.isActive,
 				});
 			}
 
 			setEditor(null);
 		} catch (error) {
 			const message =
-				error instanceof Error
-					? error.message
-					: "Không thể lưu giá.";
+				error instanceof Error ? error.message : "Không thể lưu giá.";
 
 			Alert.alert("Lưu thất bại", message);
 		}
@@ -115,6 +117,16 @@ export default function AdminPricesScreen() {
 					onPress: async () => {
 						try {
 							await deletePrice.mutateAsync(priceId);
+							setSelectedCategory((current) =>
+								current
+									? {
+											...current,
+											prices: current.prices.filter(
+												(price) => price.id !== priceId
+											),
+										}
+									: current
+							);
 						} catch (error) {
 							const message =
 								error instanceof Error
@@ -129,6 +141,29 @@ export default function AdminPricesScreen() {
 		);
 	}
 
+	function openCreateEditor(categoryId: string) {
+		setEditor({
+			mode: "create",
+			categoryId,
+			areaCode: "",
+			priceMin: "",
+			priceMax: "",
+			currency: "VND",
+		});
+	}
+
+	function openEditEditor(price: ScrapPrice) {
+		setEditor({
+			mode: "edit",
+			priceId: price.id,
+			categoryId: price.scrap_category_id,
+			areaCode: price.area_code ?? "",
+			priceMin: price.price_min.toString(),
+			priceMax: price.price_max?.toString() ?? "",
+			currency: price.currency,
+		});
+	}
+
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<ScrollView
@@ -137,7 +172,8 @@ export default function AdminPricesScreen() {
 			>
 				<Text style={styles.title}>Quản lý bảng giá</Text>
 				<Text style={styles.subtitle}>
-					Thêm, sửa hoặc xóa giá của từng nhóm phế liệu.
+					Thêm mới giá sẽ tự động kích hoạt giá đó và tắt các giá cũ cùng
+					nhóm.
 				</Text>
 
 				{isLoading ? (
@@ -146,78 +182,63 @@ export default function AdminPricesScreen() {
 					</View>
 				) : (
 					<View style={styles.categoryList}>
-						{rows.map(({ category, prices }) => (
-							<View key={category.id} style={styles.categoryCard}>
-								<View style={styles.categoryHeader}>
-									<View style={{ flex: 1 }}>
-										<Text style={styles.categoryTitle}>
-											{category.name}
-										</Text>
-										<Text style={styles.categoryMeta}>
-											Đơn vị: {category.unit}
-										</Text>
+						{rows.map((row) => {
+							const visiblePrices = row.prices.slice(0, 5);
+
+							return (
+								<View key={row.category.id} style={styles.categoryCard}>
+									<View style={styles.categoryHeader}>
+										<View style={{ flex: 1 }}>
+											<Text style={styles.categoryTitle}>
+												{row.category.name}
+											</Text>
+											<Text style={styles.categoryMeta}>
+												Đơn vị: {row.category.unit} • {row.prices.length} mức giá
+											</Text>
+										</View>
+
+										<Pressable
+											style={styles.addButton}
+											onPress={() => openCreateEditor(row.category.id)}
+										>
+											<Ionicons name="add" size={18} color="#FFFFFF" />
+											<Text style={styles.addButtonText}>Thêm</Text>
+										</Pressable>
 									</View>
 
-									<Pressable
-										style={styles.addButton}
-										onPress={() =>
-											setEditor({
-												mode: "create",
-												categoryId: category.id,
-												areaCode: "",
-												priceMin: "",
-												priceMax: "",
-												currency: "VND",
-												isActive: true,
-											})
-										}
-									>
-										<Ionicons
-											name="add"
-											size={18}
-											color="#FFFFFF"
-										/>
-										<Text style={styles.addButtonText}>
-											Thêm
-										</Text>
-									</Pressable>
-								</View>
+									{visiblePrices.length === 0 ? (
+										<Text style={styles.noPriceText}>Chưa có mức giá.</Text>
+									) : (
+										<View style={styles.priceList}>
+											{visiblePrices.map((price) => (
+												<PriceRow
+													key={price.id}
+													price={price}
+													onEdit={() => openEditEditor(price)}
+													onDelete={() => handleDelete(price.id)}
+												/>
+											))}
+										</View>
+									)}
 
-								{prices.length === 0 ? (
-									<Text style={styles.noPriceText}>
-										Chưa có mức giá.
-									</Text>
-								) : (
-									<View style={styles.priceList}>
-										{prices.map((price) => (
-											<PriceRow
-												key={price.id}
-												price={price}
-												onEdit={() =>
-													setEditor({
-														mode: "edit",
-														priceId: price.id,
-														categoryId: category.id,
-														areaCode:
-															price.area_code ?? "",
-														priceMin:
-															price.price_min.toString(),
-														priceMax:
-															price.price_max?.toString() ??
-															"",
-														currency: price.currency,
-														isActive: price.is_active,
-													})
-												}
-												onDelete={() =>
-													handleDelete(price.id)
-												}
+									{row.prices.length > 5 ? (
+										<Pressable
+											style={styles.seeAllButton}
+											onPress={() => setSelectedCategory(row)}
+										>
+											<Text style={styles.seeAllText}>
+												Xem tất cả {row.prices.length} mức giá
+											</Text>
+											<Ionicons
+												name="chevron-forward"
+												size={16}
+												color="#16A34A"
 											/>
-										))}
-									</View>
-								)}
-							</View>
-						))}
+										</Pressable>
+									) : null}
+								</View>
+							);
+						})}
 					</View>
 				)}
 			</ScrollView>
@@ -238,22 +259,29 @@ export default function AdminPricesScreen() {
 							</Text>
 
 							<Pressable onPress={() => setEditor(null)}>
-								<Ionicons
-									name="close"
-									size={24}
-									color="#1E1E1E"
-								/>
+								<Ionicons name="close" size={24} color="#1E1E1E" />
 							</Pressable>
 						</View>
+
+						{editor?.mode === "create" ? (
+							<View style={styles.activeNotice}>
+								<Ionicons
+									name="checkmark-circle-outline"
+									size={18}
+									color="#16A34A"
+								/>
+								<Text style={styles.activeNoticeText}>
+									Mức giá mới sẽ tự động được kích hoạt.
+								</Text>
+							</View>
+						) : null}
 
 						<Text style={styles.inputLabel}>Mã khu vực</Text>
 						<TextInput
 							value={editor?.areaCode ?? ""}
 							onChangeText={(value) =>
 								setEditor((current) =>
-									current
-										? { ...current, areaCode: value }
-										: current
+									current ? { ...current, areaCode: value } : current
 								)
 							}
 							placeholder="Để trống nếu là giá toàn quốc"
@@ -262,19 +290,12 @@ export default function AdminPricesScreen() {
 
 						<View style={styles.twoColumnRow}>
 							<View style={styles.twoColumnItem}>
-								<Text style={styles.inputLabel}>
-									Giá thấp nhất
-								</Text>
+								<Text style={styles.inputLabel}>Giá thấp nhất</Text>
 								<TextInput
 									value={editor?.priceMin ?? ""}
 									onChangeText={(value) =>
 										setEditor((current) =>
-											current
-												? {
-														...current,
-														priceMin: value,
-													}
-												: current
+											current ? { ...current, priceMin: value } : current
 										)
 									}
 									keyboardType="decimal-pad"
@@ -284,19 +305,12 @@ export default function AdminPricesScreen() {
 							</View>
 
 							<View style={styles.twoColumnItem}>
-								<Text style={styles.inputLabel}>
-									Giá cao nhất
-								</Text>
+								<Text style={styles.inputLabel}>Giá cao nhất</Text>
 								<TextInput
 									value={editor?.priceMax ?? ""}
 									onChangeText={(value) =>
 										setEditor((current) =>
-											current
-												? {
-														...current,
-														priceMax: value,
-													}
-												: current
+											current ? { ...current, priceMax: value } : current
 										)
 									}
 									keyboardType="decimal-pad"
@@ -311,31 +325,12 @@ export default function AdminPricesScreen() {
 							value={editor?.currency ?? "VND"}
 							onChangeText={(value) =>
 								setEditor((current) =>
-									current
-										? { ...current, currency: value }
-										: current
+									current ? { ...current, currency: value } : current
 								)
 							}
 							placeholder="VND"
 							style={styles.input}
 						/>
-
-						<View style={styles.switchRow}>
-							<Text style={styles.switchLabel}>
-								Đang kích hoạt
-							</Text>
-
-							<Switch
-								value={editor?.isActive ?? true}
-								onValueChange={(value) =>
-									setEditor((current) =>
-										current
-											? { ...current, isActive: value }
-											: current
-									)
-								}
-							/>
-						</View>
 
 						<Pressable
 							style={[
@@ -348,11 +343,47 @@ export default function AdminPricesScreen() {
 							{isSaving ? (
 								<ActivityIndicator color="#FFFFFF" />
 							) : (
-								<Text style={styles.saveButtonText}>
-									Lưu bảng giá
-								</Text>
+								<Text style={styles.saveButtonText}>Lưu bảng giá</Text>
 							)}
 						</Pressable>
+					</View>
+				</View>
+			</Modal>
+
+			<Modal
+				visible={Boolean(selectedCategory)}
+				animationType="fade"
+				transparent
+				onRequestClose={() => setSelectedCategory(null)}
+			>
+				<View style={styles.allPricesBackdrop}>
+					<View style={styles.allPricesCard}>
+						<View style={styles.modalHeader}>
+							<View style={{ flex: 1 }}>
+								<Text style={styles.modalTitle}>
+									{selectedCategory?.category.name}
+								</Text>
+								<Text style={styles.categoryMeta}>Tất cả mức giá</Text>
+							</View>
+
+							<Pressable onPress={() => setSelectedCategory(null)}>
+								<Ionicons name="close" size={24} color="#1E1E1E" />
+							</Pressable>
+						</View>
+
+						<ScrollView
+							contentContainerStyle={styles.allPricesList}
+							showsVerticalScrollIndicator={false}
+						>
+							{selectedCategory?.prices.map((price) => (
+								<PriceRow
+									key={price.id}
+									price={price}
+									onEdit={() => openEditEditor(price)}
+									onDelete={() => handleDelete(price.id)}
+								/>
+							))}
+						</ScrollView>
 					</View>
 				</View>
 			</Modal>
@@ -372,19 +403,41 @@ function PriceRow({
 	return (
 		<View style={styles.priceRow}>
 			<View style={{ flex: 1 }}>
-				<Text style={styles.priceValue}>
-					{formatVndAmount(price.price_min)}
-					{price.price_max !== null
-						? ` ~ ${formatVndAmount(price.price_max)}`
-						: ""}{" "}
-					{price.currency}
-				</Text>
+				<View style={styles.priceHeader}>
+					<Text style={styles.priceValue}>
+						{formatVndAmount(price.price_min)}
+						{price.price_max !== null
+							? ` ~ ${formatVndAmount(price.price_max)}`
+							: ""}{" "}
+						{price.currency}
+					</Text>
+					<View
+						style={[
+							styles.statusBadge,
+							price.is_active
+								? styles.statusBadgeActive
+								: styles.statusBadgeInactive,
+						]}
+					>
+						<Text
+							style={[
+								styles.statusText,
+								price.is_active
+									? styles.statusTextActive
+									: styles.statusTextInactive,
+							]}
+						>
+							{price.is_active ? "Đang dùng" : "Tạm tắt"}
+						</Text>
+					</View>
+				</View>
 
 				<Text style={styles.priceMeta}>
-					{price.area_code
-						? `Khu vực: ${price.area_code}`
-						: "Giá toàn quốc"}{" "}
-					• {price.is_active ? "Đang dùng" : "Tạm tắt"}
+					{price.area_code ? `Khu vực: ${price.area_code}` : "Giá toàn quốc"}
+				</Text>
+				<Text style={styles.priceMeta}>Ngày tạo: {formatDateTime(price.created_at)}</Text>
+				<Text style={styles.priceMeta}>
+					Hiệu lực từ: {formatDateTime(price.effective_from)}
 				</Text>
 			</View>
 
@@ -407,6 +460,16 @@ function parseNullableNumber(value: string): number | null {
 	const parsed = Number(normalized);
 
 	return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatDateTime(value: string) {
+	return new Intl.DateTimeFormat("vi-VN", {
+		day: "2-digit",
+		month: "2-digit",
+		year: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+	}).format(new Date(value));
 }
 
 const styles = StyleSheet.create({
@@ -493,14 +556,43 @@ const styles = StyleSheet.create({
 		borderRadius: 14,
 		backgroundColor: "#F9FAFB",
 	},
+	priceHeader: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		marginBottom: 4,
+	},
 	priceValue: {
+		flex: 1,
 		fontSize: 14,
 		fontWeight: "900",
 		color: "#15803D",
 	},
 	priceMeta: {
-		marginTop: 4,
+		marginTop: 3,
 		fontSize: 11,
+		lineHeight: 15,
+		color: "#71727A",
+	},
+	statusBadge: {
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 999,
+	},
+	statusBadgeActive: {
+		backgroundColor: "#DCFCE7",
+	},
+	statusBadgeInactive: {
+		backgroundColor: "#F3F4F6",
+	},
+	statusText: {
+		fontSize: 10,
+		fontWeight: "900",
+	},
+	statusTextActive: {
+		color: "#16A34A",
+	},
+	statusTextInactive: {
 		color: "#71727A",
 	},
 	iconButton: {
@@ -510,6 +602,21 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		backgroundColor: "#FFFFFF",
+	},
+	seeAllButton: {
+		marginTop: 14,
+		height: 40,
+		borderRadius: 12,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 4,
+		backgroundColor: "#F0FDF4",
+	},
+	seeAllText: {
+		fontSize: 12,
+		fontWeight: "900",
+		color: "#16A34A",
 	},
 	modalBackdrop: {
 		flex: 1,
@@ -527,11 +634,27 @@ const styles = StyleSheet.create({
 		justifyContent: "space-between",
 		alignItems: "center",
 		marginBottom: 12,
+		gap: 12,
 	},
 	modalTitle: {
 		fontSize: 19,
 		fontWeight: "900",
 		color: "#1E1E1E",
+	},
+	activeNotice: {
+		padding: 12,
+		borderRadius: 12,
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		backgroundColor: "#F0FDF4",
+	},
+	activeNoticeText: {
+		flex: 1,
+		fontSize: 12,
+		lineHeight: 16,
+		fontWeight: "800",
+		color: "#166534",
 	},
 	inputLabel: {
 		marginTop: 10,
@@ -556,17 +679,6 @@ const styles = StyleSheet.create({
 	twoColumnItem: {
 		flex: 1,
 	},
-	switchRow: {
-		marginTop: 16,
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-	},
-	switchLabel: {
-		fontSize: 14,
-		fontWeight: "800",
-		color: "#1E1E1E",
-	},
 	saveButton: {
 		marginTop: 18,
 		minHeight: 54,
@@ -582,5 +694,21 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 		fontWeight: "900",
 		color: "#FFFFFF",
+	},
+	allPricesBackdrop: {
+		flex: 1,
+		padding: 20,
+		justifyContent: "center",
+		backgroundColor: "rgba(0,0,0,0.38)",
+	},
+	allPricesCard: {
+		maxHeight: "84%",
+		padding: 18,
+		borderRadius: 20,
+		backgroundColor: "#FFFFFF",
+	},
+	allPricesList: {
+		gap: 10,
+		paddingBottom: 8,
 	},
 });

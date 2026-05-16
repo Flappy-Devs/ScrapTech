@@ -49,7 +49,8 @@
           "cameraPermission": "Cho phép Scrap Tech truy cập camera để bạn chụp ảnh phế liệu.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
