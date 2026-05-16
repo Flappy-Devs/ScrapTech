@@ -59,12 +59,11 @@ function RootNavigator({
 	const {
 		data: profile,
 		isLoading: isProfileLoading,
-		isFetching: isProfileFetching,
 	} = useMyProfile(shouldLoadProfile);
 
 	if (
 		shouldLoadProfile &&
-		(isProfileLoading || isProfileFetching)
+		isProfileLoading
 	) {
 		return null;
 	}
