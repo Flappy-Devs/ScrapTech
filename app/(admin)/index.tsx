@@ -13,16 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAdminPickupOrders } from "@/src/features/admin/admin.hooks";
 import { formatVndAmount } from "@/src/features/orders/orders.pricing";
-import type {
-	AddressSnapshot,
-	PickupOrder,
-} from "@/src/types/app.types";
+import type { AddressSnapshot, PickupOrder } from "@/src/types/app.types";
 
-type FilterStatus =
-	| "all"
-	| "pending"
-	| "confirmed"
-	| "on_the_way";
+type FilterStatus = "all" | "pending" | "confirmed" | "on_the_way";
 
 const FILTERS: Array<{
 	label: string;
@@ -35,14 +28,13 @@ const FILTERS: Array<{
 ];
 
 export default function AdminOrdersScreen() {
-	const { data: orders = [], isLoading } =
-		useAdminPickupOrders("active");
-
-	const [filter, setFilter] =
-		useState<FilterStatus>("all");
+	const { data: orders = [], isLoading } = useAdminPickupOrders("active");
+	const [filter, setFilter] = useState<FilterStatus>("all");
 
 	const visibleOrders = useMemo(() => {
-		if (filter === "all") return orders;
+		if (filter === "all") {
+			return orders;
+		}
 
 		return orders.filter((order) => order.status === filter);
 	}, [filter, orders]);
@@ -90,14 +82,8 @@ export default function AdminOrdersScreen() {
 					</View>
 				) : visibleOrders.length === 0 ? (
 					<View style={styles.emptyCard}>
-						<Ionicons
-							name="clipboard-outline"
-							size={40}
-							color="#8F9098"
-						/>
-						<Text style={styles.emptyTitle}>
-							Không có đơn phù hợp
-						</Text>
+						<Ionicons name="clipboard-outline" size={40} color="#8F9098" />
+						<Text style={styles.emptyTitle}>Không có đơn phù hợp</Text>
 					</View>
 				) : (
 					<View style={styles.orderList}>
@@ -112,64 +98,85 @@ export default function AdminOrdersScreen() {
 }
 
 function AdminOrderCard({ order }: { order: PickupOrder }) {
+	const status = getStatusPresentation(order.status);
 	const address =
-		(order.address_snapshot as unknown as AddressSnapshot)
-			?.address_line || "Chưa có địa chỉ";
+		(order.address_snapshot as unknown as AddressSnapshot)?.address_line ||
+		"Chưa có địa chỉ";
 
 	return (
 		<Pressable
 			style={styles.orderCard}
-			onPress={() =>
-				router.push(`/(admin)/orders/${order.id}`)
-			}
+			onPress={() => router.push(`/(admin)/orders/${order.id}`)}
 		>
-			<View style={styles.rowBetween}>
-				<Text style={styles.orderTitle}>
-					Đơn #{order.id.slice(0, 8)}
-				</Text>
-
-				<View style={styles.statusBadge}>
-					<Text style={styles.statusText}>
-						{getStatusLabel(order.status)}
+			<View style={styles.cardDateRow}>
+				<Text style={styles.cardDate}>{formatLongDate(order.scheduled_date)}</Text>
+				<View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
+					<Text style={[styles.statusText, { color: status.fg }]}>
+						{status.label}
 					</Text>
 				</View>
 			</View>
 
-			<Text style={styles.metaText}>
-				Ngày hẹn: {formatDate(order.scheduled_date)}
+			<Text style={styles.orderTitle}>Đơn #{order.id.slice(0, 8)}</Text>
+			<Text style={styles.compactMetaText} numberOfLines={1}>
+				{address}
 			</Text>
 
-			<Text style={styles.metaText}>
-				Địa chỉ: {address}
-			</Text>
-
-			<Text style={styles.amountText}>
-				Ước lượng:{" "}
-				{order.estimated_total !== null
+			<Text style={styles.totalLabel}>Ước lượng</Text>
+			<Text style={styles.totalValue}>
+				{typeof order.estimated_total === "number"
 					? `${formatVndAmount(order.estimated_total)} VND`
-					: "Chưa có"}
+					: "Đang cập nhật"}
 			</Text>
 		</Pressable>
 	);
 }
 
-function getStatusLabel(status: PickupOrder["status"]) {
+function getStatusPresentation(status: PickupOrder["status"]) {
 	switch (status) {
 		case "pending":
-			return "Chờ xác nhận";
+			return {
+				label: "chờ xác nhận",
+				bg: "#FEF3C7",
+				fg: "#B45309",
+			};
 		case "confirmed":
-			return "Đã xác nhận";
+			return {
+				label: "đã xác nhận",
+				bg: "#DBEAFE",
+				fg: "#2563EB",
+			};
 		case "on_the_way":
-			return "Đang tới";
-		default:
-			return status;
+			return {
+				label: "đang tới",
+				bg: "#FEF3C7",
+				fg: "#B45309",
+			};
+		case "completed":
+			return {
+				label: "hoàn thành",
+				bg: "#DCFCE7",
+				fg: "#16A34A",
+			};
+		case "rejected":
+			return {
+				label: "từ chối",
+				bg: "#FEE2E2",
+				fg: "#DC2626",
+			};
+		case "cancelled":
+			return {
+				label: "đã hủy",
+				bg: "#F3F4F6",
+				fg: "#6B7280",
+			};
 	}
 }
 
-function formatDate(value: string) {
+function formatLongDate(value: string) {
 	return new Intl.DateTimeFormat("vi-VN", {
-		day: "2-digit",
-		month: "2-digit",
+		day: "numeric",
+		month: "long",
 		year: "numeric",
 	}).format(new Date(`${value}T00:00:00`));
 }
@@ -239,47 +246,59 @@ const styles = StyleSheet.create({
 	},
 	orderCard: {
 		padding: 16,
-		borderRadius: 18,
+		borderRadius: 12,
 		backgroundColor: "#FFFFFF",
 		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowOffset: { width: 0, height: 6 },
-		shadowRadius: 14,
-		elevation: 3,
+		shadowOpacity: 0.08,
+		shadowOffset: { width: 0, height: 8 },
+		shadowRadius: 18,
+		elevation: 4,
 	},
-	rowBetween: {
+	cardDateRow: {
 		flexDirection: "row",
-		justifyContent: "space-between",
 		alignItems: "center",
-		gap: 12,
+		justifyContent: "space-between",
+		gap: 10,
 	},
-	orderTitle: {
+	cardDate: {
 		flex: 1,
-		fontSize: 15,
-		fontWeight: "900",
-		color: "#1E1E1E",
+		fontSize: 10,
+		fontWeight: "700",
+		color: "#71727A",
 	},
 	statusBadge: {
 		paddingHorizontal: 10,
-		paddingVertical: 6,
+		paddingVertical: 5,
 		borderRadius: 999,
-		backgroundColor: "#EFF6FF",
 	},
 	statusText: {
-		fontSize: 11,
-		fontWeight: "800",
-		color: "#2563EB",
+		fontSize: 10,
+		fontWeight: "900",
+		textTransform: "lowercase",
 	},
-	metaText: {
-		marginTop: 10,
+	orderTitle: {
+		marginTop: 6,
+		fontSize: 15,
+		lineHeight: 20,
+		fontWeight: "900",
+		color: "#1E1E1E",
+	},
+	compactMetaText: {
+		marginTop: 4,
 		fontSize: 12,
 		lineHeight: 17,
 		color: "#494A50",
 	},
-	amountText: {
-		marginTop: 12,
-		fontSize: 13,
+	totalLabel: {
+		marginTop: 10,
+		fontSize: 11,
+		fontWeight: "700",
+		color: "#71727A",
+	},
+	totalValue: {
+		marginTop: 3,
+		fontSize: 21,
 		fontWeight: "900",
-		color: "#16A34A",
+		color: "#00A63E",
 	},
 });

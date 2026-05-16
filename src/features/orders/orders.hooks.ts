@@ -7,6 +7,7 @@ import {
 import {
     cancelPickupOrder,
     createPickupOrder,
+    getMyPickupOrderHistory,
     getMyPickupOrders,
     getPickupOrderById,
 } from "./orders.api";
@@ -14,6 +15,7 @@ import {
 export const orderKeys = {
     all: ["orders"] as const,
     lists: () => [...orderKeys.all, "list"] as const,
+    history: () => [...orderKeys.all, "history"] as const,
     detail: (orderId: string) =>
         [...orderKeys.all, "detail", orderId] as const,
 };
@@ -22,6 +24,13 @@ export function useMyPickupOrders() {
     return useQuery({
         queryKey: orderKeys.lists(),
         queryFn: getMyPickupOrders,
+    });
+}
+
+export function useMyPickupOrderHistory() {
+    return useQuery({
+        queryKey: orderKeys.history(),
+        queryFn: getMyPickupOrderHistory,
     });
 }
 
@@ -55,6 +64,9 @@ export function useCancelPickupOrder() {
             await Promise.all([
                 queryClient.invalidateQueries({
                     queryKey: orderKeys.lists(),
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: orderKeys.history(),
                 }),
                 queryClient.invalidateQueries({
                     queryKey: orderKeys.detail(orderId),

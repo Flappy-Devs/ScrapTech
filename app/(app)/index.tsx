@@ -12,15 +12,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useMyPickupOrders } from "@/src/features/orders/orders.hooks";
 import {
-	calculateEstimatedRangeFromStoredItems,
 	formatVndAmount,
 } from "@/src/features/orders/orders.pricing";
 import type { AddressSnapshot, PickupOrder } from "@/src/types/app.types";
+import { useMyProfile } from "@/src/features/profile/profile.hooks";
 
 const ACTIVE_STATUSES = ["pending", "confirmed", "on_the_way"] as const;
 
 export default function MyOrdersScreen() {
 	const { data: orders = [], isLoading } = useMyPickupOrders();
+
+	const { data: profile, isLoading: isProfileLoading } = useMyProfile();
+
+	const displayName = profile?.full_name?.trim() || "Người dùng ScrapTech";
 
 	const activeOrders = orders.filter((order) =>
 		ACTIVE_STATUSES.includes(
@@ -43,7 +47,7 @@ export default function MyOrdersScreen() {
 						<View style={styles.welcomeTextWrap}>
 							<Text style={styles.welcomeCaption}>Welcome back,</Text>
 							<Text style={styles.welcomeTitle}>
-								Xin chào, Flappy Dev!
+								{`Xin chào, ${isProfileLoading ? "Đang tải..." : displayName}!`}
 							</Text>
 						</View>
 

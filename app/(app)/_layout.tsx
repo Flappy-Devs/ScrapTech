@@ -30,7 +30,7 @@ export default function AppLayout() {
 			<Tabs.Screen
 				name="order-history"
 				options={{
-					headerTitle: "Lịch sử đơn hàng",
+					headerShown: false,
 					tabBarLabel: "Lịch sử đơn hàng",
 					tabBarIcon: ({ color, size, focused }) => (
 						<Ionicons

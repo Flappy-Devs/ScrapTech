@@ -6,6 +6,27 @@ import type {
 	PickupOrderDetails,
 } from "@/src/types/app.types";
 
+const HISTORY_STATUSES: PickupOrder["status"][] = [
+	"completed",
+	"rejected",
+	"cancelled",
+];
+
+async function getAuthenticatedUserId(): Promise<string> {
+	const {
+		data: { user },
+		error,
+	} = await supabase.auth.getUser();
+
+	throwIfSupabaseError(error);
+
+	if (!user) {
+		throw new Error("User is not authenticated.");
+	}
+
+	return user.id;
+}
+
 export async function createPickupOrder(
 	input: CreatePickupOrderInput
 ): Promise<string> {
@@ -28,9 +49,12 @@ export async function createPickupOrder(
 }
 
 export async function getMyPickupOrders(): Promise<PickupOrder[]> {
+	const userId = await getAuthenticatedUserId();
+
 	const { data, error } = await supabase
 		.from("pickup_orders")
 		.select("*")
+		.eq("seller_id", userId)
 		.order("created_at", { ascending: false });
 
 	throwIfSupabaseError(error);
@@ -38,9 +62,36 @@ export async function getMyPickupOrders(): Promise<PickupOrder[]> {
 	return data ?? [];
 }
 
+export async function getMyPickupOrderHistory(): Promise<
+	PickupOrderDetails[]
+> {
+	const userId = await getAuthenticatedUserId();
+
+	const { data, error } = await supabase
+		.from("pickup_orders")
+		.select(`
+			*,
+			items:pickup_order_items (
+				*,
+				scrap_categories (*)
+			),
+			images:pickup_order_images (*),
+			review:reviews (*)
+		`)
+		.eq("seller_id", userId)
+		.in("status", HISTORY_STATUSES)
+		.order("created_at", { ascending: false });
+
+	throwIfSupabaseError(error);
+
+	return (data ?? []) as PickupOrderDetails[];
+}
+
 export async function getPickupOrderById(
 	orderId: string
 ): Promise<PickupOrderDetails | null> {
+	const userId = await getAuthenticatedUserId();
+
 	const { data, error } = await supabase
 		.from("pickup_orders")
 		.select(`
@@ -53,6 +104,7 @@ export async function getPickupOrderById(
 			review:reviews (*)
 		`)
 		.eq("id", orderId)
+		.eq("seller_id", userId)
 		.maybeSingle();
 
 	throwIfSupabaseError(error);
